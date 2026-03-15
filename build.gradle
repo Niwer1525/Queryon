@@ -1,0 +1,48 @@
+plugins {
+    id 'java'
+    id 'java-library'
+    id 'com.gradleup.shadow' version '9.3.2'
+}
+
+repositories {
+    // Use Maven Central for resolving dependencies.
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    // Use JUnit Jupiter for testing.
+    testImplementation "org.junit.jupiter:junit-jupiter:${project.junit_jupiter_version}"
+
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+
+    // This dependency is used by the application.
+    // implementation "com.google.code.gson:gson:${project.gson_version}"
+    implementation "org.xerial:sqlite-jdbc:${project.sqlite_jdbc_version}"
+    implementation "com.github.Niwer1525:Lumen:${project.lumen_version}"
+
+    // shadow("com.google.code.gson:gson:${project.gson_version}")
+    shadow("org.xerial:sqlite-jdbc:${project.sqlite_jdbc_version}")
+    shadow("com.github.Niwer1525:Lumen:${project.lumen_version}")
+}
+
+// Apply a specific Java toolchain to ease working on different environments.
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+tasks.named('test') {
+    // Use JUnit Platform for unit tests.
+    useJUnitPlatform()
+}
+
+/* Add all dependcies to the jar */
+shadowJar {
+	minimize()
+   	// configurations = [project.configurations.shadow]
+	// commonExclusions.each { exclude it } // Exclude unnecessary files
+	// archiveFileName = "network.jar"
+	// archiveClassifier.set('')
+}
