@@ -1,0 +1,27 @@
+package niwer.queryon;
+
+import niwer.queryon.tables.EnumColumnTypes;
+import niwer.queryon.tables.Table;
+
+public class TestFoodTable extends Table {
+
+    public TestFoodTable(DataBase db) {
+        super(db);
+
+        this.dropTable(db); // Drop the table if it already exists to ensure a clean state for testing
+
+        /* Add multiple columns at once */
+        this.addColumns(
+            createColumn(db, "id", EnumColumnTypes.INT).autoIncrement().primaryKey(),
+            createColumn(db, "name", 255).notNull(),
+            createColumn(db, "calories", EnumColumnTypes.INT),
+            createColumn(db, "user_identifier", EnumColumnTypes.INT).unique().foreignKey(TestUserTable.class, "id", true)
+        )
+        .execute(); // Execute the table creation in the database
+    }
+
+    @Override
+    public String name() {
+        return "food_table";
+    }
+}

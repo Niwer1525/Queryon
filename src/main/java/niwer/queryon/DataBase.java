@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import niwer.lumen.Console;
+import niwer.queryon.queries.InteractionManager;
 import niwer.queryon.tables.Table;
 
 /**
@@ -96,10 +97,13 @@ public class DataBase {
         Console.log("Registering SQL table : " + table.getSimpleName()).type(QueryonLogTypes.SQL).send();
         this.reconnect(); // Ensure the connection is active before executing the query
 
+        /* Ensure the table is not already registered */
+        if(REGISTERED_TABLES.stream().anyMatch(t -> t.getClass().equals(table)))
+            throw new IllegalArgumentException("Table " + table.getSimpleName() + " is already registered");
+
         /* Create an instance of the table and register it */
         try {
-            final Table TABLE_INSTANCE = table.getDeclaredConstructor().newInstance();
-            TABLE_INSTANCE.register(this);
+            final Table TABLE_INSTANCE = table.getDeclaredConstructor(DataBase.class).newInstance(this);
             REGISTERED_TABLES.add(TABLE_INSTANCE);
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
             Console.log(e).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
@@ -108,5 +112,41 @@ public class DataBase {
         }
 
         return this;
+    }
+
+    /**
+     * Get a registered table instance by its class. This is used internally by interaction managers to perform operations on the correct table.
+     * 
+     * @param tableClass The class of the table to retrieve
+     * @return The registered table instance corresponding to the specified class
+     */
+    public Table getTable(Class<? extends Table> tableClass) {
+        return REGISTERED_TABLES.stream()
+            .filter(t -> t.getClass().equals(tableClass))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Table " + tableClass.getSimpleName() + " is not registered"));
+    }
+
+    /**
+     * Check if a table is registered in the database by its class.
+     * 
+     * @param db The DataBase instance to check for the table's existence
+     * @param table The table to check
+     * @return true if the table is registered in the database, false otherwise
+     */
+    public boolean tabExists(Table table) {
+        // var x = InteractionManager.queryInt(this, "SELECT name FROM sqlite_master WHERE type='table' AND name='" + table.name() + "';");
+        // Console.log(x).send();
+        return false;
+    }
+
+    /**
+     * Check if a table is registered in the database by its class.
+     * 
+     * @param tableClass The class of the table to check
+     * @return true if the table is registered in the database, false otherwise
+     */
+    public boolean tabExists(Class<? extends Table> tableClass) {
+        return this.tabExists(this.getTable(tableClass));
     }
 }

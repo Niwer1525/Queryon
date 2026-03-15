@@ -1,12 +1,11 @@
 package niwer.queryon;
 
 import java.io.File;
-import java.util.List;
 
-import niwer.lumen.Console;
-import niwer.queryon.TestUserTable.TestUser;
-import niwer.queryon.interactions.InteractionManager;
-
+/**
+ * This is a global test class that demonstrates the usage of the Queryon library.
+ * It initializes a test database, registers some tables, inserts test data, and performs some queries to verify that everything is working correctly. This class can be used as a reference for how to use the Queryon library in a real application.
+ */
 public class GlobalTest {
 
     public static void main(String[] args) {
@@ -15,23 +14,44 @@ public class GlobalTest {
         if (DB_FILE.exists()) DB_FILE.delete(); // Ensure the database file is clean before initializing
 
         final DataBase DB = new DataBase(DB_FILE)
-            .registerTable(TestUserTable.class);
+            .registerTable(TestUserTable.class)
+            .registerTable(TestFoodTable.class)
+        ;
 
         {
-            /* Insert test users */
-            // InteractionManagerTest.addUsers(DB);
+            /* You can drop a table inside it's class directly or by getting the table via the DataBase instance */
+            DB.getTable(TestUserTable.class).dropTable(DB);
+        }
 
+        {
+            DB.tabExists(TestUserTable.class);
+
+            /* Insert test users */
+            // InsertionManager.insert(DB, TestUserTable.class)
+            //     .value("id", 1)
+            //     .value("name", "Alice")
+            //     .value("age", 30)
+            //     .execute();
+
+            // InsertionManager.insert(DB, TestUserTable.class)
+            //     .value("id", 2)
+            //     .value("name", "Bob")
+            //     .value("age", 30)
+            //     .execute();
+        }
+
+        {
             /* Try to select one of the inserted users */
-            final Object SINGLE_USER = InteractionManager.query(DB, TestUser.class, """
-                SELECT * FROM test_table WHERE name = ?
-            """, "Alice");
-            Console.log(SINGLE_USER).container(QueryonEngine.LOGGER).send();
+            // final Object SINGLE_USER = SelectionManager.select(DB, TestUser.class)
+            //     .where("name", "Alice")
+            //     .execute();
+            // Console.log(SINGLE_USER).container(QueryonEngine.LOGGER).send();
 
             /* Try to select all users */
-            final List<TestUser> USERS = InteractionManager.queryList(DB, TestUser.class, """
-                SELECT * FROM test_table
-            """);
-            Console.log(USERS).container(QueryonEngine.LOGGER).send();
+            // final List<TestUser> USERS = InteractionManager.queryList(DB, TestUser.class, """
+            //     SELECT * FROM test_table
+            // """);
+            // Console.log(USERS).container(QueryonEngine.LOGGER).send();
 
             // (int)executeSQLCommandForPrimitive("SELECT COUNT(*) FROM PlayerAccount WHERE LOWER(email) = LOWER(?)", email.trim()) > 0;
         }

@@ -5,9 +5,15 @@ package niwer.queryon.tables;
  * Each enum constant corresponds to a specific SQL data type.
  */
 public enum EnumColumnTypes {
-    INT("INT"),
+    ENUM("TEXT"), // Enum does not exist directly in SQL. We'll use CHECK (column IN ('value1', 'value2', ...)) constraints to simulate enum behavior.
+
+    INT("INTEGER"),
+    REAL("REAL"),
     VARCHAR("VARCHAR"),
-    BOOLEAN("BOOLEAN");
+    TEXT("TEXT"),
+    BOOLEAN("BOOLEAN"),
+    DATE("DATE"),
+    DATE_TIME("DATETIME");
 
     private final String sqlType;
 

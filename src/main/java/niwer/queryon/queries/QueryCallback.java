@@ -1,4 +1,4 @@
-package niwer.queryon.interactions;
+package niwer.queryon.queries;
 
 import java.sql.ResultSet;
 

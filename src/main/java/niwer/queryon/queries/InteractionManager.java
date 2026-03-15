@@ -1,4 +1,4 @@
-package niwer.queryon.interactions;
+package niwer.queryon.queries;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -80,6 +80,33 @@ public class InteractionManager {
      * @param params The parameters to set in the prepared statement, in the order of the placeholders
      */
     public static void query(DataBase db, String sql, Object... params) { query(db, null, sql, params); }
+
+    /**
+     * Perform an SQL write query and return the number of affected rows.
+     *
+     * @param db The database to perform the query on
+     * @param sql The SQL query to perform, with '?' placeholders for parameters
+     * @param params The parameters to set in the prepared statement, in the order of the placeholders
+     * @return Number of affected rows
+     */
+    @Deprecated
+    public static int queryUpdateCount(DataBase db, String sql, Object... params) {
+        if (db == null) throw new IllegalArgumentException("Database cannot be null.");
+        if (sql == null || sql.isEmpty()) throw new IllegalArgumentException("SQL command cannot be null or empty.");
+
+        db.reconnect();
+        try(final PreparedStatement STATE = db.sqlConnection().prepareStatement(sql)) {
+            for (int i = 0; i < params.length; i++) STATE.setObject(i + 1, params[i]);
+            return STATE.executeUpdate();
+        } catch (SQLException e) {
+            Console.log("SQL error occurred while executing query.", e).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
+        } catch (Exception e) {
+            Console.log("Error occurred while executing query.", e).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
+        } finally {
+            db.disconnect();
+        }
+        return 0;
+    }
 
     /**
      * Perform an SQL query on the database and get the result as an object of type T.

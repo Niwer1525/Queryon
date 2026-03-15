@@ -1,26 +1,28 @@
-package niwer.queryon.interactions;
+package niwer.queryon.queries.interaction;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import niwer.queryon.DataBase;
+import niwer.queryon.queries.InteractionManager;
+import niwer.queryon.tables.Table;
 
 public class DeletionManager {
 
     private final DataBase DATA_BASE;
-    private final String TABLE_NAME;
+    private final Table TABLE;
     private final Map<String, Object> WHERE_CONDITIONS = new HashMap<>();
 
-    private DeletionManager(DataBase db, String tableName) {
+    private DeletionManager(DataBase db, Class<? extends Table> table) {
         this.DATA_BASE = db;
-        this.TABLE_NAME = tableName;
+        this.TABLE = db.getTable(table);
     }
 
     /**
      * Starts a deletion query for the specified table.
-     * @param tableName The name of the table to select from
+     * @param table The table to select from
      */
-    public static DeletionManager delete(DataBase db, String tableName) { return new DeletionManager(db, tableName); }
+    public static DeletionManager delete(DataBase db, Class<? extends Table> table) { return new DeletionManager(db, table); }
 
     public DeletionManager where(String column, Object value) {
         WHERE_CONDITIONS.put(column, value);
@@ -28,7 +30,7 @@ public class DeletionManager {
     }
     
     public void execute() {
-        final StringBuilder QUERY = new StringBuilder("DELETE FROM ").append(TABLE_NAME).append(" WHERE ");
+        final StringBuilder QUERY = new StringBuilder("DELETE FROM ").append(TABLE.name()).append(" WHERE ");
 
         /* Add columns */
         for (final Map.Entry<String, Object> ENTRY : WHERE_CONDITIONS.entrySet()) {

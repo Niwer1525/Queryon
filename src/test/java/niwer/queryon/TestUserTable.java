@@ -8,16 +8,26 @@ import niwer.queryon.tables.Table;
 
 public class TestUserTable extends Table {
 
-    @Override
-    public void register(DataBase db) {
-        createTable(db, "test_table")
-            .addColumns(
-                createColumn("id", EnumColumnTypes.INT).autoIncrement().primaryKey(),
-                createTextColumn("name", 255).notNull(),
-                createColumn("age", EnumColumnTypes.INT)
-            )
+    public TestUserTable(DataBase db) {
+        super(db);
+
+        this.addColumns(
+            createColumn(db, "id", EnumColumnTypes.INT).autoIncrement().primaryKey(),
+            createColumn(db, "name", 255).notNull(),
+            createColumn(db, "age", EnumColumnTypes.INT)
+        )
         .execute(); // Execute the table creation in the database
+
+        // this.addColumns(
+        //     createColumn(db, "id", EnumColumnTypes.INT).autoIncrement().primaryKey(),
+        //     createColumn(db, "name", 255).notNull(),
+        //     createColumn(db, "age", EnumColumnTypes.INT)
+        // )
+        // .execute(); // Execute the table creation in the database
     }
+
+    @Override
+    public String name() { return "test_table"; }
 
     public static class TestUser implements SQLSerializable<TestUser> {
         private int id;
