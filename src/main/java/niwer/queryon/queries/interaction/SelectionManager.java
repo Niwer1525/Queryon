@@ -7,7 +7,6 @@ import niwer.queryon.DataBase;
 import niwer.queryon.SQLSerializable;
 import niwer.queryon.queries.BuiltQuery;
 import niwer.queryon.queries.InteractionManager;
-import niwer.queryon.queries.QueryExecutor;
 import niwer.queryon.tables.Table;
 
 public class SelectionManager extends QueryExecutor {
@@ -42,7 +41,8 @@ public class SelectionManager extends QueryExecutor {
      */
     public <T extends SQLSerializable<T>> T execute(Class<T> serializer) {
         final BuiltQuery QUERY = buildQuery();
-        return InteractionManager.querySerializable(this.DATA_BASE, serializer, QUERY.sql(), QUERY.asArray());
+        // return InteractionManager.querySerializable(this.DATA_BASE, serializer, QUERY, QUERY.asArray());
+        return null;
     }
 
     @Override

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import niwer.queryon.DataBase;
 import niwer.queryon.TestUserTable;
+import niwer.queryon.queries.Expression;
 
 class TableTest {
     
@@ -29,6 +30,25 @@ class TableTest {
         });
     }
 
+    @Test void testCreateEmptyTable() {
+        final Table TABLE = new Table(setupDataBase("testCreateTable")) {
+            @Override public String name() { return "test_table"; }
+        };
+        assertDoesNotThrow(() -> TABLE.execute());
+    }
+
+    @Test void testCreateTableWithColumnsAndConstraints() {
+        final DataBase DB = setupDataBase("testCreateTableWithColumnsAndConstraints");
+        final Table TABLE = new Table(DB) {
+            @Override public String name() { return "test_table"; }
+        };
+        assertDoesNotThrow(() -> TABLE
+            .addColumn(Table.createColumn(DB, "int_column", EnumColumnTypes.INT))
+            .addCheckConstraint(Expression.of("int_column").isEqualTo(25))
+            .execute()
+        );
+    }
+    
     @Test void testCreateTableIllegalArgs() {
         assertThrows(IllegalArgumentException.class, () -> new Table(null) {
             @Override public String name() { return "test_table"; }
@@ -66,6 +86,22 @@ class TableTest {
         TABLE.addColumn(Table.createColumn(DB, "int_column", EnumColumnTypes.INT));
         assertNotNull(TABLE.columns(), "addColumn should add the column to the table's column map");
         assertEquals(1, TABLE.columns().size(), "addColumn should add the column to the table's column map");
+    }
+
+    @Test void testDropTable() {
+        final DataBase DB = setupDataBase("testDropTable");
+        final Table TABLE = new Table(DB) {
+            @Override public String name() { return "test_table"; }
+        };
+        assertDoesNotThrow(() -> TABLE.dropTable(DB), "dropTable should not throw an exception when dropping an existing table");
+    }
+
+    @Test void testDropAllRows() {
+        final DataBase DB = setupDataBase("testDropAllRows");
+        final Table TABLE = new Table(DB) {
+            @Override public String name() { return "test_table"; }
+        };
+        assertDoesNotThrow(() -> TABLE.dropAllRows(DB), "dropAllRows should not throw an exception when dropping all rows from an existing table");
     }
 
     @Test void testCreateColumnIllegalArgs() {

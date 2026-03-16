@@ -2,6 +2,8 @@ package niwer.queryon;
 
 import java.io.File;
 
+import niwer.lumen.Console;
+
 /**
  * This is a global test class that demonstrates the usage of the Queryon library.
  * It initializes a test database, registers some tables, inserts test data, and performs some queries to verify that everything is working correctly. This class can be used as a reference for how to use the Queryon library in a real application.
@@ -14,18 +16,19 @@ public class GlobalTest {
         if (DB_FILE.exists()) DB_FILE.delete(); // Ensure the database file is clean before initializing
 
         final DataBase DB = new DataBase(DB_FILE)
-            .registerTable(TestUserTable.class)
+            .registerTable(TestUserTable.class) // Create and register the TestUserTable, which will automatically create the table in the database
             .registerTable(TestFoodTable.class)
         ;
 
         {
             /* You can drop a table inside it's class directly or by getting the table via the DataBase instance */
-            DB.getTable(TestUserTable.class).dropTable(DB);
+            DB.dropTable(TestUserTable.class); // Delete the TestUserTable if it exists, which will drop the table from the database
+            DB.registerTable(TestUserTable.class); // Recreate the TestUserTable after dropping (deleting) it
+            final boolean TEST_USER_TABLE_EXIST = DB.tabExists(TestUserTable.class);
+            Console.log("User Table exists : " + TEST_USER_TABLE_EXIST).container(QueryonEngine.LOGGER).send();
         }
 
         {
-            DB.tabExists(TestUserTable.class);
-
             /* Insert test users */
             // InsertionManager.insert(DB, TestUserTable.class)
             //     .value("id", 1)

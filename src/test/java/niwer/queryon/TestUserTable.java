@@ -3,6 +3,7 @@ package niwer.queryon;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import niwer.queryon.queries.Expression;
 import niwer.queryon.tables.EnumColumnTypes;
 import niwer.queryon.tables.Table;
 
@@ -16,12 +17,19 @@ public class TestUserTable extends Table {
             createColumn(db, "name", 255).notNull(),
             createColumn(db, "age", EnumColumnTypes.INT)
         )
+        .addCheckConstraints(
+            Expression.of("age").isGreaterThanOrEqualTo(0) // Age must be non-negative
+        )
         .execute(); // Execute the table creation in the database
 
         // this.addColumns(
         //     createColumn(db, "id", EnumColumnTypes.INT).autoIncrement().primaryKey(),
         //     createColumn(db, "name", 255).notNull(),
-        //     createColumn(db, "age", EnumColumnTypes.INT)
+        //     createColumn(db, "age", EnumColumnTypes.INT),
+        //     createColumn(db, "boom", EnumColumnTypes.INT)
+        // )
+        // .addCheckConstraints(
+        //     Expression.of("age").isGreaterThanOrEqualTo(0) // Age must be non-negative
         // )
         // .execute(); // Execute the table creation in the database
     }

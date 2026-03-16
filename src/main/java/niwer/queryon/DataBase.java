@@ -31,9 +31,8 @@ public class DataBase {
      */
     public DataBase(File databaseFile) {
         if (databaseFile == null) throw new IllegalArgumentException("Database file cannot be null");
-        if (!databaseFile.getParentFile().exists()) {
-            if (!databaseFile.getParentFile().mkdirs()) Console.log("Failed to create database directory: " + databaseFile.getParent()).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
-        }
+        if (!databaseFile.getParentFile().exists() && !databaseFile.getParentFile().mkdirs())
+            Console.log("Failed to create database directory: " + databaseFile.getParent()).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
         this.DATA_BASE_PATH = "jdbc:sqlite:" + databaseFile.getAbsolutePath();
     }
 
@@ -94,7 +93,6 @@ public class DataBase {
      * @return this Database instance for chaining
      */
     public DataBase registerTable(Class<? extends Table> table) {
-        Console.log("Registering SQL table : " + table.getSimpleName()).type(QueryonLogTypes.SQL).send();
         this.reconnect(); // Ensure the connection is active before executing the query
 
         /* Ensure the table is not already registered */
@@ -105,6 +103,7 @@ public class DataBase {
         try {
             final Table TABLE_INSTANCE = table.getDeclaredConstructor(DataBase.class).newInstance(this);
             REGISTERED_TABLES.add(TABLE_INSTANCE);
+            Console.log("Registering SQL table : " + TABLE_INSTANCE.name()).type(QueryonLogTypes.SQL).send();
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
             Console.log(e).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
         } finally {
@@ -135,8 +134,14 @@ public class DataBase {
      * @return true if the table is registered in the database, false otherwise
      */
     public boolean tabExists(Table table) {
-        // var x = InteractionManager.queryInt(this, "SELECT name FROM sqlite_master WHERE type='table' AND name='" + table.name() + "';");
-        // Console.log(x).send();
+        this.reconnect(); // Ensure the connection is active before executing the query
+        try (final var STATEMENT = this.sqlConnection.prepareStatement("SELECT name FROM sqlite_master WHERE type='table' AND name='" + table.name() + "';")) {
+            return STATEMENT.executeQuery().next(); // If the query returns a result, the table exists
+        } catch (SQLException e) {
+            Console.log("Failed to check if table exists: " + e.getMessage()).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
+        } finally {
+            this.disconnect(); // Ensure the connection is closed after the operation
+        }
         return false;
     }
 
@@ -148,5 +153,20 @@ public class DataBase {
      */
     public boolean tabExists(Class<? extends Table> tableClass) {
         return this.tabExists(this.getTable(tableClass));
+    }
+
+    /**
+     * Drop a table in the database.
+     * This will delete the table and all its data from the database, but it will unregister the table from the DataBase instance.
+     * 
+     * @param tableClass The class of the table to drop
+     * @return The Table instance for chaining
+     */
+    protected Table dropTable(Class<? extends Table> tableClass) {
+        final Table table = this.getTable(tableClass);
+        Console.log("Unregistering and dropping table " + table.name()).type(QueryonLogTypes.SQL).container(QueryonEngine.LOGGER).send();
+        InteractionManager.query(this, "DROP TABLE IF EXISTS " + table.name() + ";");
+        REGISTERED_TABLES.remove(table);
+        return table;
     }
 }

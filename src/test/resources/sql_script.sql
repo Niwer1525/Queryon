@@ -16,22 +16,10 @@ PRAGMA foreign_keys = ON;
 DROP VIEW IF EXISTS v_active_users;
 DROP TRIGGER IF EXISTS trg_users_updated_at;
 DROP TABLE IF EXISTS user_audit;
-DROP TABLE IF EXISTS order_items;
-DROP TABLE IF EXISTS orders;
-DROP TABLE IF EXISTS products;
-DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS departments;
 
 /* ------------------------------------------------------------- */
 /* 1) DDL - tables, constraints, defaults, checks, foreign keys */
 /* ------------------------------------------------------------- */
-CREATE TABLE departments (
-    id            INTEGER PRIMARY KEY,
-    code          TEXT NOT NULL UNIQUE,
-    name          TEXT NOT NULL,
-    created_at    TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
 CREATE TABLE users (
     id            INTEGER PRIMARY KEY,
     email         TEXT NOT NULL UNIQUE,
@@ -44,8 +32,8 @@ CREATE TABLE users (
     created_at    TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at    TEXT,
     FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL,
-    FOREIGN KEY (manager_id) REFERENCES users(id) ON DELETE SET NULL,
     CHECK (age IS NULL OR age >= 0)
+    CHECK (salary >= 0 AND salary <> 1000000)
 );
 
 CREATE TABLE products (
@@ -57,32 +45,14 @@ CREATE TABLE products (
     stock         INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0)
 );
 
-CREATE TABLE orders (
-    id            INTEGER AUTO_INCREMENT PRIMARY KEY,
-    user_id       INTEGER NOT NULL,
-    status        VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PAID', 'CANCELLED')),
-    order_date    TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    total_amount  REAL NOT NULL DEFAULT 0,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
 CREATE TABLE order_items (
     order_id      INTEGER NOT NULL,
     product_id    INTEGER NOT NULL,
-    quantity      INTEGER NOT NULL CHECK (quantity > 0),
+    quantity      INTEGER NOT NULL CHECK (quantity > 0 AND quantity <= 1000),
     unit_price    REAL NOT NULL CHECK (unit_price >= 0),
     PRIMARY KEY (order_id, product_id),
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
-);
-
-CREATE TABLE user_audit (
-    id            INTEGER PRIMARY KEY,
-    user_id       INTEGER NOT NULL,
-    old_salary    REAL,
-    new_salary    REAL,
-    changed_at    TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 /* ALTER TABLE examples (SQLite supports a subset) */
@@ -410,14 +380,3 @@ SELECT name, type FROM sqlite_master ORDER BY type, name;
 
 PRAGMA table_info(users);
 PRAGMA index_list(users);
-
-/* ------------------------------------------------------------- */
-/* 9) Optional cleanup examples                                 */
-/* ------------------------------------------------------------- */
-/*
-DELETE FROM order_items;
-DELETE FROM orders;
-DELETE FROM products;
-DELETE FROM users;
-DELETE FROM departments;
-*/

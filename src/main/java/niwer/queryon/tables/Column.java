@@ -5,12 +5,13 @@ import java.util.Date;
 
 import niwer.queryon.DataBase;
 import niwer.queryon.QueryonEngine;
+import niwer.queryon.queries.Expression;
 
 public class Column {
     private static final String CURRENT_TIMESTAMP = "CURRENT_TIMESTAMP";
 
+    protected final String NAME;
     private final DataBase DATA_BASE;
-    private final String NAME;
     private final EnumColumnTypes TYPE;
     private final int SIZE; // Only used for VARCHAR, ignored otherwise
     private final String[] ENUM_VALUES_NAMES; // Only used for ENUM, ignored otherwise
@@ -20,10 +21,11 @@ public class Column {
     private boolean unique = false;
     private boolean primaryKey = false;
     private Object defaultValue = null;
+    private Expression defaultValueExpression = null; // For default values that are expressions (e.g. CURRENT_TIMESTAMP)
 
     private Table foreignKeyReferenceTable = null;
     private String foreignKeyReferenceColumn = null;
-    private boolean foreignKeyDeleteCascade = false;
+    private EnumForeginKeyAction foreignKeyDeleteAction = EnumForeginKeyAction.NO_ACTION;
 
     protected Column(DataBase db, String name, EnumColumnTypes type, int size, Class<? extends Enum<?>> enumType) {
         if (db == null) throw new IllegalArgumentException("DataBase instance cannot be null.");
@@ -103,13 +105,29 @@ public class Column {
      * @param referenceColumn The name of the column in the referenced table that this column references as a foreign key
      * @return The SQLColumn instance for chaining
      */
-    public Column foreignKey(Class<? extends Table> referenceTable, String referenceColumn, boolean deleteCascade) {
+    public Column foreignKey(Class<? extends Table> referenceTable, String referenceColumn, EnumForeginKeyAction deleteAction) {
         this.foreignKeyReferenceTable = this.DATA_BASE.getTable(referenceTable);
         this.foreignKeyReferenceColumn = referenceColumn;
-        this.foreignKeyDeleteCascade = deleteCascade;
+        this.foreignKeyDeleteAction = deleteAction;
         return this;
     }
     
+    /**
+     * Sets the default value for the column using an expression.
+     * This is useful for setting default values that are not constant, such as the current timestamp.
+     * 
+     * @param value The default value to set. It can be a constant value or a special value like "CURRENT_TIMESTAMP" for DATE and DATE_TIME columns.
+     * @param expression The expression that defines the default value. For example, for a "age" column, you could use an expression like "age < 18" to set the default value to "minor" if the age is less than 18, and "adult" otherwise.
+     * @return The SQLColumn instance for chaining
+     */
+    public Column defaultValue(Object value, Expression expression) {
+        if (this.TYPE == EnumColumnTypes.ENUM)
+            throw new IllegalArgumentException("Default value expressions are not supported for ENUM columns for column " + NAME);
+        
+        this.defaultValueExpression = expression;
+        return defaultValue(value);
+    }
+
     /**
      * Sets the default value for the column.
      * The type of the default value must match the column type (Integer for INT, String for VARCHAR, Boolean for BOOLEAN, etc). If the type does not match, an IllegalArgumentException is thrown.
@@ -122,9 +140,6 @@ public class Column {
      * Or if you want to set the date in string format, it must match the expected format for the column type (e.g. "YYYY-MM-DD" for DATE and "YYYY-MM-DD HH:MM:SS" for DATE_TIME).
      */
     public Column defaultValue(Object value) {
-        if(value instanceof Enum) {
-
-        }
         switch (this.TYPE) {
             case ENUM -> {
                 if (!(value instanceof Enum))
@@ -150,12 +165,12 @@ public class Column {
                 else if (value instanceof String string) handleDateStringDefault(string, "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}", "DATE_TIME");
                 else throw new IllegalArgumentException("Default value type does not match column type for column " + NAME);
             }
-            default -> throw new IllegalArgumentException("Unsupported column type for default value for column " + NAME);
         }
         return this;
     }
 
-    protected String sql() {
+    @Override
+    public String toString() {
         final StringBuilder QUERY = new StringBuilder(NAME + " " + TYPE.sqlType());
         if (TYPE == EnumColumnTypes.VARCHAR) QUERY.append(String.format("(%d)", SIZE));
         if (autoIncrement) QUERY.append(" AUTO_INCREMENT");
@@ -165,13 +180,14 @@ public class Column {
         if (defaultValue != null) {
             QUERY.append(String.format(" DEFAULT '%s'", defaultValue));
             if (TYPE == EnumColumnTypes.ENUM) QUERY.append(" CHECK (" + NAME + " IN ('" + String.join("', '", ENUM_VALUES_NAMES) + "'))"); // For ENUM columns, we also add a CHECK constraint to ensure that the value is one of the defined enum values
+            if (defaultValueExpression != null) QUERY.append(" CHECK (" + defaultValueExpression + ")");
         }
         return QUERY.toString();
     }
 
     protected String constraintSQL() {
         if (foreignKeyReferenceTable == null || foreignKeyReferenceColumn == null) return null;
-        return String.format("FOREIGN KEY (%s) REFERENCES %s(%s)%s", NAME, foreignKeyReferenceTable.name(), foreignKeyReferenceColumn, foreignKeyDeleteCascade ? " ON DELETE CASCADE" : "");
+        return String.format("FOREIGN KEY (%s) REFERENCES %s(%s)%s", NAME, foreignKeyReferenceTable.name(), foreignKeyReferenceColumn, " ON DELETE " + foreignKeyDeleteAction);
     }
 
     @Override public int hashCode() { return NAME.hashCode(); }

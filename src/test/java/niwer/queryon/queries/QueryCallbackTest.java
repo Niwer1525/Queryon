@@ -4,8 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.junit.jupiter.api.Test;
 
-import niwer.queryon.queries.QueryCallback;
-
 class QueryCallbackTest {
 
     @Test void testNullResult() {

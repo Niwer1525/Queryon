@@ -1,6 +1,7 @@
-package niwer.queryon.queries;
+package niwer.queryon.queries.interaction;
 
 import niwer.queryon.DataBase;
+import niwer.queryon.queries.BuiltQuery;
 import niwer.queryon.tables.Table;
 
 /**

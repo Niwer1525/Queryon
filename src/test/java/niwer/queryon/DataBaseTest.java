@@ -92,7 +92,21 @@ class DataBaseTest {
         final DataBase DB = new DataBase(new File(tempDir, "test.db"))
             .registerTable(TestUserTable.class)
         ;
-        // assertTrue(DB.tabExists(TestUserTable.class), "tabExists should return true for existing table");
-        // assertFalse(DB.tabExists(TestFoodTable.class), "tabExists should return false for non-existent table");
+        assertTrue(DB.tabExists(TestUserTable.class), "tabExists should return true for existing table");
+        
+        Table t = new Table(DB) {
+            @Override public String name() { return "non_existent_table"; }
+        };
+        assertFalse(DB.tabExists(t), "tabExists should return false for non-existent table");
+    }
+
+    @Test void testDropTable() {
+        final DataBase DB = new DataBase(new File(tempDir, "test.db"))
+            .registerTable(TestUserTable.class)
+        ;
+        assertTrue(DB.tabExists(TestUserTable.class), "Table should exist after registration");
+
+        DB.dropTable(TestUserTable.class);
+        assertThrows(IllegalArgumentException.class, () -> DB.getTable(TestUserTable.class), "Table should not exist after dropping");
     }
 }

@@ -7,6 +7,7 @@ import niwer.lumen.Console;
 import niwer.queryon.DataBase;
 import niwer.queryon.QueryonEngine;
 import niwer.queryon.QueryonLogTypes;
+import niwer.queryon.queries.Expression;
 import niwer.queryon.queries.InteractionManager;
 
 /**
@@ -22,6 +23,7 @@ public abstract class Table {
 
     private final DataBase DATA_BASE;
     private final Set<Column> COLUMNS = new LinkedHashSet<>();
+    private final Set<Expression> CHECK_CONSTRAINTS = new LinkedHashSet<>();
     
     public Table(DataBase db) {
         if (db == null) throw new IllegalArgumentException("DataBase instance cannot be null.");
@@ -66,15 +68,27 @@ public abstract class Table {
     }
 
     /**
-     * Dropp all rows from this table
+     * Drop this table
      * This is useful for resetting the state of the table during testing or when you want to clear all data without deleting the table itself.
      * 
      * @param db The DataBase instance to which the table belongs
      * @return The Table instance for chaining
      */
-    public Table dropTable(DataBase db) {
+    protected Table dropTable(DataBase db) {
         Console.log("Dropping table " + this.name()).type(QueryonLogTypes.SQL).container(QueryonEngine.LOGGER).send();
         InteractionManager.query(db, "DROP TABLE IF EXISTS " + this.name() + ";");
+        return this;
+    }
+
+    /**
+     * Drop all rows from this table without dropping the table itself. This is useful for resetting the state of the table during testing or when you want to clear all data without deleting the table structure.
+     * 
+     * @param db The DataBase instance to which the table belongs
+     * @return The Table instance for chaining
+     */
+    public Table dropAllRows(DataBase db) {
+        Console.log("Dropping all rows from table " + this.name()).type(QueryonLogTypes.SQL).container(QueryonEngine.LOGGER).send();
+        InteractionManager.query(db, "DELETE FROM " + this.name() + ";");
         return this;
     }
 
@@ -98,8 +112,22 @@ public abstract class Table {
         return this;
     }
 
-    private boolean columnExists(String columnName) { //TODO
-        return InteractionManager.queryInt(this.DATA_BASE, "SELECT COUNT(*) FROM pragma_table_info('" + this.name() + "') WHERE name = '" + columnName + "';") == 1;
+    public Table addCheckConstraint(Expression expression) {
+        CHECK_CONSTRAINTS.add(expression);
+        return this;
+    }
+
+    public Table addCheckConstraints(Expression... expressions) {
+        for (final Expression EXPRESSION : expressions) addCheckConstraint(EXPRESSION);
+        return this;
+    }
+
+    private boolean columnExists(Column column) {
+        return columnExists(column.NAME);
+    }
+
+    private boolean columnExists(String columnName) {
+        return InteractionManager.queryInt(DATA_BASE, "SELECT COUNT(*) FROM pragma_table_info('" + this.name() + "') WHERE name = '" + columnName + "';") > 0;
     }
 
     /**
@@ -107,16 +135,26 @@ public abstract class Table {
      * This should be called after defining all columns for the table.
      */
     public void execute() {
-        // if (this.DATA_BASE.tabExists(this)) { //TODO
-        //     throw new IllegalStateException("Table '" + this.name() + "' already exists in the database.");
-        //     // return;
-        // }
+        if (this.DATA_BASE.tabExists(this)) {
+            final var MISSING_COLUMNS = COLUMNS.stream().filter(column -> !columnExists(column)).toList();
+
+            /* If there are missing columns, alter the table */
+            if (!MISSING_COLUMNS.isEmpty()) {
+                final StringBuilder QUERY = new StringBuilder("");
+                for (final Column MISSING_COLUMN : MISSING_COLUMNS) QUERY.append("ALTER TABLE ").append(this.name()).append(" ADD COLUMN ").append(MISSING_COLUMN.toString()).append("; ");
+                InteractionManager.query(this.DATA_BASE, QUERY.toString());
+                return;
+            }
+
+            Console.log("Table " + this.name() + " already exists with all defined columns. Skipping creation.").type(QueryonLogTypes.SQL).container(QueryonEngine.LOGGER).send();
+            return;
+        }
 
         final StringBuilder QUERY = new StringBuilder("CREATE TABLE IF NOT EXISTS " + this.name());
 
         /* Get the columns */
         final String COLUMNS_SQL = COLUMNS.stream()
-            .map(Column::sql)
+            .map(Column::toString)
             .reduce((a, b) -> a + ", " + b)
             .orElse("");
 
@@ -127,10 +165,20 @@ public abstract class Table {
             .reduce((a, b) -> a + ", " + b)
             .orElse("");
 
+        /* Get check constraints */
+        final String CHECK_CONSTRAINTS_SQL = CHECK_CONSTRAINTS.stream()
+            .map(Expression::toString)
+            .reduce((a, b) -> a + ", " + b)
+            .orElse("");
+
         /* Build the final query */
         QUERY.append(" (").append(COLUMNS_SQL);
         if (!COLUMNS_SQL.isEmpty() && !CONSTRAINTS_SQL.isEmpty()) QUERY.append(", ");
         QUERY.append(CONSTRAINTS_SQL);
+        if (!CHECK_CONSTRAINTS_SQL.isEmpty()) {
+            QUERY.append(", ");
+            QUERY.append("CHECK (").append(CHECK_CONSTRAINTS_SQL).append(")");
+        }
         QUERY.append(")");
 
         /* Execute the query */

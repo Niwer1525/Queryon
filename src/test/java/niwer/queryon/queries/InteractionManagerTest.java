@@ -14,9 +14,7 @@ import org.junit.jupiter.api.io.TempDir;
 import niwer.queryon.DataBase;
 import niwer.queryon.TestUserTable;
 import niwer.queryon.TestUserTable.TestUser;
-import niwer.queryon.queries.InteractionManager;
 
-// TODO Add support for : SELECT name FROM test_table WHERE age = 30
 class InteractionManagerTest {
 
     @TempDir
