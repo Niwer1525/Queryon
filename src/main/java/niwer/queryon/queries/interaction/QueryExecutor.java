@@ -1,7 +1,6 @@
 package niwer.queryon.queries.interaction;
 
 import niwer.queryon.DataBase;
-import niwer.queryon.queries.BuiltQuery;
 import niwer.queryon.tables.Table;
 
 /**
@@ -19,5 +18,5 @@ public abstract class QueryExecutor {
         this.TABLE = dataBase.getTable(tableClas);
     }
 
-    protected abstract BuiltQuery buildQuery();
+    protected abstract String buildQuery();
 }

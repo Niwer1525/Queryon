@@ -7,8 +7,10 @@ import niwer.lumen.Console;
 import niwer.queryon.DataBase;
 import niwer.queryon.QueryonEngine;
 import niwer.queryon.QueryonLogTypes;
+import niwer.queryon.SQLSerializable;
 import niwer.queryon.queries.Expression;
 import niwer.queryon.queries.InteractionManager;
+import niwer.queryon.tables.api.IColumnField;
 
 /**
  * Represents a database table that can be registered with a DataBase instance.
@@ -33,7 +35,7 @@ public abstract class Table {
 
     public abstract String name();
     
-    public Set<Column> columns() { return Set.copyOf(COLUMNS); }
+    public final Set<Column> columns() { return Set.copyOf(COLUMNS); }
 
     /**
      * Helper method to create a column definition for the table. It supports basic column types (INT, VARCHAR, BOOLEAN) and allows to set various constraints (NOT NULL, UNIQUE, AUTO_INCREMENT, PRIMARY KEY) and default values.
@@ -41,7 +43,7 @@ public abstract class Table {
      * @param type The type of the column (INT, VARCHAR, BOOLEAN)
      * @return An SQLColumn instance that can be further configured with constraints and default values, and then added to a table definition using SQLTable.addColumn()
      */
-    protected static Column createColumn(DataBase db, String name, EnumColumnTypes type) {
+    protected final static Column createColumn(DataBase db, String name, EnumColumnTypes type) {
         return new Column(db, name, type, 0, null);
     }
 
@@ -51,7 +53,7 @@ public abstract class Table {
      * @param size The size of the VARCHAR column (maximum number of characters)
      * @return An SQLColumn instance that can be further configured with constraints and default values, and then added to a table definition using SQLTable.addColumn()
      */
-    protected static Column createColumn(DataBase db, String name, int size) { 
+    protected final static Column createColumn(DataBase db, String name, int size) { 
         return new Column(db, name, EnumColumnTypes.VARCHAR, size, null);
     }
 
@@ -63,7 +65,7 @@ public abstract class Table {
      * @param enumType The enum type that defines the possible values for the column
      * @return An SQLColumn instance that can be further configured with constraints and default values, and then added to a table definition using SQLTable.addColumn()
      */
-    protected static Column createColumn(DataBase db, String name, Class<? extends Enum<?>> enumType) {
+    protected final static Column createColumn(DataBase db, String name, Class<? extends Enum<?>> enumType) {
         return new Column(db, name, EnumColumnTypes.ENUM, 0, enumType);
     }
 
@@ -74,7 +76,7 @@ public abstract class Table {
      * @param db The DataBase instance to which the table belongs
      * @return The Table instance for chaining
      */
-    protected Table dropTable(DataBase db) {
+    protected final Table dropTable(DataBase db) {
         Console.log("Dropping table " + this.name()).type(QueryonLogTypes.SQL).container(QueryonEngine.LOGGER).send();
         InteractionManager.query(db, "DROP TABLE IF EXISTS " + this.name() + ";");
         return this;
@@ -86,7 +88,7 @@ public abstract class Table {
      * @param db The DataBase instance to which the table belongs
      * @return The Table instance for chaining
      */
-    public Table dropAllRows(DataBase db) {
+    public final Table dropAllRows(DataBase db) {
         Console.log("Dropping all rows from table " + this.name()).type(QueryonLogTypes.SQL).container(QueryonEngine.LOGGER).send();
         InteractionManager.query(db, "DELETE FROM " + this.name() + ";");
         return this;
@@ -97,7 +99,7 @@ public abstract class Table {
      * @param column The column to add
      * @return The SQLTable instance for chaining
      */
-    public Table addColumn(Column column) {
+    public final Table addColumn(Column column) {
         COLUMNS.add(column);
         return this;
     }
@@ -107,26 +109,45 @@ public abstract class Table {
      * @param columns The columns to add
      * @return The SQLTable instance for chaining
      */
-    public Table addColumns(Column... columns) {
+    public final Table addColumns(Column... columns) {
         for (final Column COLUMN : columns) COLUMNS.add(COLUMN);
         return this;
     }
 
-    public Table addCheckConstraint(Expression expression) {
+    /**
+     * Add columns to the table definition based on the fields of a class annotated with @ColumnField.
+     * Each field in the class that is annotated with @ColumnField will be converted into a column definition and added to the table. This allows for defining table columns using simple Java classes, which can be more convenient and less error-prone than manually creating Column instances for each column.
+     * 
+     * @param clazz The class containing the @ColumnField annotations
+     * @return The Table instance for chaining
+     */
+    public final Table addColumnsFromClass(Class<? extends SQLSerializable<?>> clazz) {
+        if (clazz == null) throw new IllegalArgumentException("Class cannot be null.");
+        
+        for (final var FIELD : clazz.getDeclaredFields()) {
+            if (FIELD.isAnnotationPresent(IColumnField.class)) {
+                final IColumnField ANNOTATION = FIELD.getAnnotation(IColumnField.class);
+                this.addColumn(new Column(this.DATA_BASE, FIELD, ANNOTATION));
+            }
+        }
+        return this;
+    }
+
+    public final Table addCheckConstraint(Expression expression) {
         CHECK_CONSTRAINTS.add(expression);
         return this;
     }
 
-    public Table addCheckConstraints(Expression... expressions) {
+    public final Table addCheckConstraints(Expression... expressions) {
         for (final Expression EXPRESSION : expressions) addCheckConstraint(EXPRESSION);
         return this;
     }
 
-    private boolean columnExists(Column column) {
+    private final boolean columnExists(Column column) {
         return columnExists(column.NAME);
     }
 
-    private boolean columnExists(String columnName) {
+    private final boolean columnExists(String columnName) {
         return InteractionManager.queryInt(DATA_BASE, "SELECT COUNT(*) FROM pragma_table_info('" + this.name() + "') WHERE name = '" + columnName + "';") > 0;
     }
 
@@ -134,7 +155,7 @@ public abstract class Table {
      * Execute the SQL command to create the table in the database with the defined columns.
      * This should be called after defining all columns for the table.
      */
-    public void execute() {
+    public final void execute() {
         if (this.DATA_BASE.tabExists(this)) {
             final var MISSING_COLUMNS = COLUMNS.stream().filter(column -> !columnExists(column)).toList();
 

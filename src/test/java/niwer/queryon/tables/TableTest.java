@@ -11,8 +11,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import niwer.queryon.DataBase;
+import niwer.queryon.SQLSerializable;
+import niwer.queryon.TestFoodTable;
 import niwer.queryon.TestUserTable;
 import niwer.queryon.queries.Expression;
+import niwer.queryon.tables.api.IColumnField;
+import niwer.queryon.tables.api.IForeignKey;
 
 class TableTest {
     
@@ -121,5 +125,66 @@ class TableTest {
 
     private enum TestEnum {
         VALUE1, VALUE2, VALUE3
+    }
+
+    @Test void testCreateColumnFromAnnotationIllegalArgs() {
+        final DataBase DB = setupDataBase("testCreateColumnFromAnnotationIllegalArgs");
+        final Table TABLE = new Table(DB) {
+            @Override public String name() { return "test_table"; }
+        };
+        assertThrows(IllegalArgumentException.class, () -> TABLE.addColumnsFromClass(null), "Should throw IllegalArgumentException if class is null");
+    }
+
+    @Test void testCreateColumnFromAnnotation() {
+        final DataBase DB = setupDataBase("testCreateColumnFromAnnotation").registerTable(TestFoodTable.class);
+        final Table TABLE = new Table(DB) {
+            @Override public String name() { return "test_table"; }
+        };
+
+        assertDoesNotThrow(() -> {
+            TABLE.addColumnsFromClass(TestAnnotatedClass.class).execute();
+        }, "Should not throw an exception when creating a column from a valid ColumnField annotation");
+    }
+
+    @Test void testCreateColumnFromAnnotationIllegal() {
+        final DataBase DB = setupDataBase("testCreateColumnFromAnnotationIllegal");
+        final Table TABLE = new Table(DB) {
+            @Override public String name() { return "test_table"; }
+        };
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            TABLE.addColumnsFromClass(TestAnnotatedClassIllegalOne.class).execute();
+        }, "Should throw IllegalArgumentException when creating a column from an invalid ColumnField annotation");
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            TABLE.addColumnsFromClass(TestAnnotatedClassIllegalBis.class).execute();
+        }, "Should throw IllegalArgumentException when creating a column from an invalid ColumnField annotation");
+    }
+    
+    private static class TestAnnotatedClass extends SQLSerializable<TestAnnotatedClass> {
+        @IColumnField(autoIncrement = true, primaryKey = true)
+        private int id;
+
+        @IColumnField(name = "name", charLimit = 255, notNull = true)
+        private String name;
+
+        @IColumnField(charLimit = 36, unique = true)
+        private String uuid;
+
+        @IColumnField(name = "food_id", charLimit = 20, foreignKey = @IForeignKey(table = TestFoodTable.class, column = "id", onDelete = EnumForeginKeyAction.CASCADE))
+        private String foodId;
+
+        @IColumnField()
+        private TestEnum testEnum;
+    }
+
+    private static class TestAnnotatedClassIllegalOne extends SQLSerializable<TestAnnotatedClassIllegalOne> {
+        @IColumnField(autoIncrement = true)
+        private String name;
+    }
+
+    private static class TestAnnotatedClassIllegalBis extends SQLSerializable<TestAnnotatedClassIllegalBis> {
+        @IColumnField(charLimit = 255)
+        private boolean status;
     }
 }

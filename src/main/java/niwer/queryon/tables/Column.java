@@ -1,12 +1,20 @@
 package niwer.queryon.tables;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Date;
 
 import niwer.queryon.DataBase;
 import niwer.queryon.QueryonEngine;
 import niwer.queryon.queries.Expression;
+import niwer.queryon.tables.api.IColumnField;
 
+/**
+ * Represents a column in a database table, including its name, type, constraints, and other properties.
+ * 
+ * @author Niwer
+ */
+@SuppressWarnings("rawtypes")
 public class Column {
     private static final String CURRENT_TIMESTAMP = "CURRENT_TIMESTAMP";
 
@@ -27,7 +35,31 @@ public class Column {
     private String foreignKeyReferenceColumn = null;
     private EnumForeginKeyAction foreignKeyDeleteAction = EnumForeginKeyAction.NO_ACTION;
 
-    protected Column(DataBase db, String name, EnumColumnTypes type, int size, Class<? extends Enum<?>> enumType) {
+    protected Column(DataBase db, Field field, IColumnField annotation) {
+        if (db == null) throw new IllegalArgumentException("DataBase instance cannot be null.");
+
+        this.DATA_BASE = db;
+        this.NAME = annotation.name().isEmpty() ? field.getName() : annotation.name();
+        this.SIZE = annotation.charLimit();
+        this.TYPE = EnumColumnTypes.fromJava(field);
+        if (this.TYPE == EnumColumnTypes.ENUM) this.ENUM_VALUES_NAMES = enumToStrings(field.getType().asSubclass(Enum.class));
+        else this.ENUM_VALUES_NAMES = null;
+        
+        if (annotation.charLimit() > 0 && TYPE != EnumColumnTypes.VARCHAR) throw new IllegalArgumentException("charLimit is only applicable to VARCHAR columns for column " + NAME);
+        if (annotation.autoIncrement() && TYPE != EnumColumnTypes.INT) throw new IllegalArgumentException("autoIncrement is only applicable to INT columns for column " + NAME);
+        if (annotation.notNull()) notNull();
+        if (annotation.unique()) unique();
+        if (annotation.primaryKey()) primaryKey(); // This will also set notNull and unique to true
+        if (annotation.autoIncrement()) autoIncrement();
+        if (annotation.foreignKey().table() != Table.class) foreignKey(annotation.foreignKey().table(), annotation.foreignKey().column(), annotation.foreignKey().onDelete());
+        if (!annotation.defaultValue().isEmpty()) defaultValue(annotation.defaultValue());
+    }
+
+    private String[] enumToStrings(Class<? extends Enum> enumType) {
+        return Arrays.stream(enumType.getEnumConstants()).map(Enum::name).toArray(String[]::new);
+    }
+
+    protected Column(DataBase db, String name, EnumColumnTypes type, int size, Class<? extends Enum> enumType) {
         if (db == null) throw new IllegalArgumentException("DataBase instance cannot be null.");
         if (name == null || name.isEmpty()) throw new IllegalArgumentException("Column name cannot be null or empty.");
         if (type == null) throw new IllegalArgumentException("Column type cannot be null.");
@@ -45,7 +77,7 @@ public class Column {
     /**
      * Helper method to handle default value assignment for DATE and DATE_TIME columns.
      */
-    private void handleDateStringDefault(String string, String regex, String typeName) {
+    private final void handleDateStringDefault(String string, String regex, String typeName) {
         if (string.equalsIgnoreCase(CURRENT_TIMESTAMP)) this.defaultValue = CURRENT_TIMESTAMP;
         else if (string.matches(regex)) this.defaultValue = string;
         else throw new IllegalArgumentException("Default value string does not match expected format for " + typeName + " column for column " + NAME);
@@ -57,7 +89,7 @@ public class Column {
      * 
      * @return The SQLColumn instance for chaining
      */
-    public Column autoIncrement() {
+    public final Column autoIncrement() {
         this.autoIncrement = true;
         return this;
     }
@@ -68,7 +100,7 @@ public class Column {
      * 
      * @return The SQLColumn instance for chaining
      */
-    public Column notNull() {
+    public final Column notNull() {
         this.notNull = true;
         return this;
     }
@@ -79,7 +111,7 @@ public class Column {
      * 
      * @return The SQLColumn instance for chaining
      */
-    public Column unique() {
+    public final Column unique() {
         this.unique = true;
         return this;
     }
@@ -91,7 +123,7 @@ public class Column {
      * 
      * @return The SQLColumn instance for chaining
      */
-    public Column primaryKey() {
+    public final Column primaryKey() {
         this.primaryKey = true;
         return this.notNull().unique();
     }
@@ -105,7 +137,7 @@ public class Column {
      * @param referenceColumn The name of the column in the referenced table that this column references as a foreign key
      * @return The SQLColumn instance for chaining
      */
-    public Column foreignKey(Class<? extends Table> referenceTable, String referenceColumn, EnumForeginKeyAction deleteAction) {
+    public final Column foreignKey(Class<? extends Table> referenceTable, String referenceColumn, EnumForeginKeyAction deleteAction) {
         this.foreignKeyReferenceTable = this.DATA_BASE.getTable(referenceTable);
         this.foreignKeyReferenceColumn = referenceColumn;
         this.foreignKeyDeleteAction = deleteAction;
@@ -120,7 +152,7 @@ public class Column {
      * @param expression The expression that defines the default value. For example, for a "age" column, you could use an expression like "age < 18" to set the default value to "minor" if the age is less than 18, and "adult" otherwise.
      * @return The SQLColumn instance for chaining
      */
-    public Column defaultValue(Object value, Expression expression) {
+    public final Column defaultValue(Object value, Expression expression) {
         if (this.TYPE == EnumColumnTypes.ENUM)
             throw new IllegalArgumentException("Default value expressions are not supported for ENUM columns for column " + NAME);
         
@@ -139,7 +171,7 @@ public class Column {
      * Or if you want to set it to a specific date or datetime, you can pass a java.util
      * Or if you want to set the date in string format, it must match the expected format for the column type (e.g. "YYYY-MM-DD" for DATE and "YYYY-MM-DD HH:MM:SS" for DATE_TIME).
      */
-    public Column defaultValue(Object value) {
+    public final Column defaultValue(Object value) {
         switch (this.TYPE) {
             case ENUM -> {
                 if (!(value instanceof Enum))
@@ -171,7 +203,7 @@ public class Column {
 
     @Override
     public String toString() {
-        final StringBuilder QUERY = new StringBuilder(NAME + " " + TYPE.sqlType());
+        final StringBuilder QUERY = new StringBuilder(NAME + " " + TYPE.sql());
         if (TYPE == EnumColumnTypes.VARCHAR) QUERY.append(String.format("(%d)", SIZE));
         if (autoIncrement) QUERY.append(" AUTO_INCREMENT");
         if (primaryKey) QUERY.append(" PRIMARY KEY");
@@ -185,7 +217,7 @@ public class Column {
         return QUERY.toString();
     }
 
-    protected String constraintSQL() {
+    protected final String constraintSQL() {
         if (foreignKeyReferenceTable == null || foreignKeyReferenceColumn == null) return null;
         return String.format("FOREIGN KEY (%s) REFERENCES %s(%s)%s", NAME, foreignKeyReferenceTable.name(), foreignKeyReferenceColumn, " ON DELETE " + foreignKeyDeleteAction);
     }

@@ -1,8 +1,10 @@
 package niwer.queryon;
 
+
 import java.io.File;
 
 import niwer.lumen.Console;
+import niwer.queryon.queries.interaction.InsertionManager;
 
 /**
  * This is a global test class that demonstrates the usage of the Queryon library.
@@ -30,17 +32,16 @@ public class GlobalTest {
 
         {
             /* Insert test users */
-            // InsertionManager.insert(DB, TestUserTable.class)
-            //     .value("id", 1)
-            //     .value("name", "Alice")
-            //     .value("age", 30)
-            //     .execute();
+            InsertionManager.insert(DB, TestUserTable.class, "id", "name", "age")
+                .row(1, "Alice", 30)
+                .values(InsertionManager.of(2, "Bob", 25), InsertionManager.of(3, "Carol", 28))
+                .execute();
 
-            // InsertionManager.insert(DB, TestUserTable.class)
-            //     .value("id", 2)
-            //     .value("name", "Bob")
-            //     .value("age", 30)
-            //     .execute();
+            /* Insert test foods */
+            InsertionManager.insert(DB, TestFoodTable.class, "id", "name", "calories")
+                .row(1, "Apple", 1.5)
+                .values(InsertionManager.of(2, "Banana", 2.0), InsertionManager.of(3, "Cherry", 3.0))
+                .execute();
         }
 
         {
@@ -58,5 +59,13 @@ public class GlobalTest {
 
             // (int)executeSQLCommandForPrimitive("SELECT COUNT(*) FROM PlayerAccount WHERE LOWER(email) = LOWER(?)", email.trim()) > 0;
         }
+
+        // var selected = SelectionManager.select(DB, TestUserTable.class, "user_id")
+        //     .where(Expression.of("status").isEqualTo("PENDING"))
+        //     .execute();
+        
+        // SelectionManager.select(DB, TestUserTable.class, "username")
+        //     .where(Expression.of("id").in(selected))
+        //     .execute();
     }
 }

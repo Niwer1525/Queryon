@@ -14,21 +14,29 @@ class ExpressionTest {
     @Test void createGreaterThanExpression() {
         final Expression EXPRESSION = Expression.of("age").isGreaterThan(30);
         assertExpressionEquals("age > 30", EXPRESSION);
+
+        assertThrows(IllegalArgumentException.class, () -> Expression.of("age").isGreaterThan(null));
     }
 
     @Test void createGreaterThanOrEqualToExpression() {
         final Expression EXPRESSION = Expression.of("age").isGreaterThanOrEqualTo(30);
         assertExpressionEquals("age >= 30", EXPRESSION);
+
+        assertThrows(IllegalArgumentException.class, () -> Expression.of("age").isGreaterThanOrEqualTo(null));
     }
 
     @Test void createLessThanExpression() {
         final Expression EXPRESSION = Expression.of("age").isLessThan(30);
         assertExpressionEquals("age < 30", EXPRESSION);
+
+        assertThrows(IllegalArgumentException.class, () -> Expression.of("age").isLessThan(null));
     }
 
     @Test void createLessThanOrEqualToExpression() {
         final Expression EXPRESSION = Expression.of("age").isLessThanOrEqualTo(30);
         assertExpressionEquals("age <= 30", EXPRESSION);
+
+        assertThrows(IllegalArgumentException.class, () -> Expression.of("age").isLessThanOrEqualTo(null));
     }
 
     @Test void createEqualToExpression() {
@@ -146,6 +154,16 @@ class ExpressionTest {
         assertExpressionEquals("name LIKE '%ann%'", EXPRESSION3);
     }
 
+    @Test void testBetweenExpression() {
+        final Expression EXPRESSION3 = Expression.of("name").between(25, 35);
+        assertExpressionEquals("name BETWEEN 25 AND 35", EXPRESSION3);
+    }
+
+    @Test void testBetweenExpressionWithNullValues() {
+        assertThrows(IllegalArgumentException.class, () -> Expression.of("name").between(null, 35));
+        assertThrows(IllegalArgumentException.class, () -> Expression.of("name").between(25, null));
+    }
+
     @Test void testEmptyNullAnd() {
         final Expression EXPRESSION1 = Expression.of("age").isGreaterThan(30);
         assertThrows(IllegalArgumentException.class, () -> EXPRESSION1.and(null));
@@ -188,10 +206,11 @@ class ExpressionTest {
         assertThrows(IllegalStateException.class, () -> EXPRESSION.in("Alice", "Bob"));
         assertThrows(IllegalStateException.class, () -> EXPRESSION.in(TestStatus.class));
         assertThrows(IllegalStateException.class, () -> EXPRESSION.like("A%"));
+        assertThrows(IllegalStateException.class, () -> EXPRESSION.between(25, 35));
     }
 
     @Test void testEmptyNullColumnName() {
-        assertThrows(IllegalArgumentException.class, () -> Expression.of(null));
+        assertThrows(IllegalArgumentException.class, () -> Expression.of((String)null));
         assertThrows(IllegalArgumentException.class, () -> Expression.of(""));
     }
 
