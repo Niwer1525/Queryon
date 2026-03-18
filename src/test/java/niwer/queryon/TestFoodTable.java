@@ -10,7 +10,7 @@ public class TestFoodTable extends Table {
     public TestFoodTable(DataBase db) {
         super(db);
 
-        this.dropTable(db); // Drop the table if it already exists to ensure a clean state for testing
+        this.dropTable(); // Drop the table if it already exists to ensure a clean state for testing
 
         /* Add multiple columns at once */
         // this.addColumn(createColumn(db, "calories", EnumColumnTypes.INT).defaultValue(25, Expression.of("calories").isLessThanOrEqualTo(125))); // Default isn't supported with @ColumnField yet, so we have to create the column manually for now
@@ -30,7 +30,7 @@ public class TestFoodTable extends Table {
         @IColumnField(name = "name", charLimit = 255, notNull = true)
         private String name;
 
-        @IColumnField(name = "calories", defaultValue = "25")
+        @IColumnField(name = "calories")
         private double calories;
 
         @IColumnField(name = "user_identifier", unique = true, foreignKey = @IForeignKey(table = TestUserTable.class, column = "id", onDelete = EnumForeginKeyAction.CASCADE))

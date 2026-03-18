@@ -2,11 +2,34 @@ package niwer.queryon;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.io.File;
 import java.util.Date;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class QueryonEngineTest {
+
+    @TempDir
+    private static File tempDir;
+
+    public static DataBase setupEmptyDB(String name) {
+        final DataBase DB = new DataBase(new File(tempDir, name +".db")).registerTable(TestUserTable.class);
+        return DB;
+    }
+
+    public static DataBase setupUsersDB(String name) {
+        return setupEmptyDB(name).registerTable(TestUserTable.class);
+    }
+
+    public static DataBase setupUsersAndFoodDB(String name) {
+        return setupEmptyDB(name).registerTable(TestUserTable.class).registerTable(TestFoodTable.class);
+    }
+
+    @Test void testInstances() {
+        assertEquals(QueryonEngine.class, new QueryonEngine().getClass());
+        assertEquals(QueryonLogTypes.class, new QueryonLogTypes().getClass());
+    }
 
     @Test void testDateToSQL() {
         final Date DATE = new Date(0); // January 1, 1970

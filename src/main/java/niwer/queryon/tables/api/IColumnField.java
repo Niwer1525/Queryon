@@ -29,6 +29,4 @@ public @interface IColumnField {
     boolean primaryKey() default false; // Optional: specify if the column should be a PRIMARY KEY
 
     IForeignKey foreignKey() default @IForeignKey(table = Table.class, column = ""); // Optional: specify a foreign key relationship (default is no foreign key)
-    
-    String defaultValue() default ""; // SQL literal value used as default (e.g. 25, 'text', TRUE)
 }

@@ -9,7 +9,7 @@ import niwer.queryon.QueryonEngine;
 import niwer.queryon.QueryonLogTypes;
 import niwer.queryon.SQLSerializable;
 import niwer.queryon.queries.Expression;
-import niwer.queryon.queries.InteractionManager;
+import niwer.queryon.queries.QueryManager;
 import niwer.queryon.tables.api.IColumnField;
 
 /**
@@ -76,9 +76,9 @@ public abstract class Table {
      * @param db The DataBase instance to which the table belongs
      * @return The Table instance for chaining
      */
-    protected final Table dropTable(DataBase db) {
+    protected final Table dropTable() {
         Console.log("Dropping table " + this.name()).type(QueryonLogTypes.SQL).container(QueryonEngine.LOGGER).send();
-        InteractionManager.query(db, "DROP TABLE IF EXISTS " + this.name() + ";");
+        QueryManager.query(this.DATA_BASE, "DROP TABLE IF EXISTS " + this.name() + ";");
         return this;
     }
 
@@ -88,9 +88,9 @@ public abstract class Table {
      * @param db The DataBase instance to which the table belongs
      * @return The Table instance for chaining
      */
-    public final Table dropAllRows(DataBase db) {
+    public final Table dropAllRows() {
         Console.log("Dropping all rows from table " + this.name()).type(QueryonLogTypes.SQL).container(QueryonEngine.LOGGER).send();
-        InteractionManager.query(db, "DELETE FROM " + this.name() + ";");
+        QueryManager.query(this.DATA_BASE, "DELETE FROM " + this.name() + ";");
         return this;
     }
 
@@ -148,7 +148,7 @@ public abstract class Table {
     }
 
     private final boolean columnExists(String columnName) {
-        return InteractionManager.queryInt(DATA_BASE, "SELECT COUNT(*) FROM pragma_table_info('" + this.name() + "') WHERE name = '" + columnName + "';") > 0;
+        return QueryManager.queryInt(DATA_BASE, "SELECT COUNT(*) FROM pragma_table_info('" + this.name() + "') WHERE name = '" + columnName + "';") > 0;
     }
 
     /**
@@ -163,11 +163,11 @@ public abstract class Table {
             if (!MISSING_COLUMNS.isEmpty()) {
                 final StringBuilder QUERY = new StringBuilder("");
                 for (final Column MISSING_COLUMN : MISSING_COLUMNS) QUERY.append("ALTER TABLE ").append(this.name()).append(" ADD COLUMN ").append(MISSING_COLUMN.toString()).append("; ");
-                InteractionManager.query(this.DATA_BASE, QUERY.toString());
+                QueryManager.query(this.DATA_BASE, QUERY.toString());
                 return;
             }
 
-            Console.log("Table " + this.name() + " already exists with all defined columns. Skipping creation.").type(QueryonLogTypes.SQL).container(QueryonEngine.LOGGER).send();
+            Console.log("Table %s already exists with all defined columns. Skipping creation.", this.name()).type(QueryonLogTypes.SQL).container(QueryonEngine.LOGGER).send();
             return;
         }
 
@@ -203,7 +203,7 @@ public abstract class Table {
         QUERY.append(")");
 
         /* Execute the query */
-        InteractionManager.query(this.DATA_BASE, QUERY.toString());
+        QueryManager.query(this.DATA_BASE, QUERY.toString());
     }
 
     @Override public int hashCode() { return name().hashCode(); }

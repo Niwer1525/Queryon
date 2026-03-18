@@ -1,10 +1,13 @@
 package niwer.queryon;
-
-
 import java.io.File;
+import java.util.List;
 
 import niwer.lumen.Console;
+import niwer.queryon.TestUserTable.TestUser;
+import niwer.queryon.queries.Expression;
+import niwer.queryon.queries.interaction.DeletionManager;
 import niwer.queryon.queries.interaction.InsertionManager;
+import niwer.queryon.queries.interaction.SelectionManager;
 
 /**
  * This is a global test class that demonstrates the usage of the Queryon library.
@@ -34,38 +37,54 @@ public class GlobalTest {
             /* Insert test users */
             InsertionManager.insert(DB, TestUserTable.class, "id", "name", "age")
                 .row(1, "Alice", 30)
-                .values(InsertionManager.of(2, "Bob", 25), InsertionManager.of(3, "Carol", 28))
+                .rows(InsertionManager.of(2, "Bob", 25), InsertionManager.of(3, "Carol", 28))
                 .execute();
 
             /* Insert test foods */
             InsertionManager.insert(DB, TestFoodTable.class, "id", "name", "calories")
                 .row(1, "Apple", 1.5)
-                .values(InsertionManager.of(2, "Banana", 2.0), InsertionManager.of(3, "Cherry", 3.0))
+                .rows(InsertionManager.of(2, "Banana", 2.0), InsertionManager.of(3, "Cherry", 3.0))
                 .execute();
         }
 
         {
-            /* Try to select one of the inserted users */
-            // final Object SINGLE_USER = SelectionManager.select(DB, TestUser.class)
-            //     .where("name", "Alice")
-            //     .execute();
-            // Console.log(SINGLE_USER).container(QueryonEngine.LOGGER).send();
+            /* Select one of the inserted users (Name: Alice) */
+            final TestUser SINGLE_USER = SelectionManager.select(DB, TestUserTable.class)
+                .where(Expression.of("name").isEqualTo("Alice"))
+                .executeSerializable(TestUser.class);
+            Console.log(SINGLE_USER).container(QueryonEngine.LOGGER).send();
 
-            /* Try to select all users */
-            // final List<TestUser> USERS = InteractionManager.queryList(DB, TestUser.class, """
-            //     SELECT * FROM test_table
-            // """);
-            // Console.log(USERS).container(QueryonEngine.LOGGER).send();
+            /* Select all users with age greater than 26 */
+            final List<TestUser> USERS = SelectionManager.selectDistinct(DB, TestUserTable.class)
+                .where(Expression.of("age").isGreaterThan(26))
+                .executeList(TestUser.class);
+            Console.log(USERS).container(QueryonEngine.LOGGER).send();
 
             // (int)executeSQLCommandForPrimitive("SELECT COUNT(*) FROM PlayerAccount WHERE LOWER(email) = LOWER(?)", email.trim()) > 0;
         }
 
-        // var selected = SelectionManager.select(DB, TestUserTable.class, "user_id")
-        //     .where(Expression.of("status").isEqualTo("PENDING"))
-        //     .execute();
-        
-        // SelectionManager.select(DB, TestUserTable.class, "username")
-        //     .where(Expression.of("id").in(selected))
-        //     .execute();
+        {
+            /* Prepare a selection query to check existance of the new user */
+            final SelectionManager SELECT_MANAGER = SelectionManager.select(DB, TestUserTable.class)
+                .where(Expression.of("name").isEqualTo("Mia"));
+
+            /* Insert a new user */
+            InsertionManager.insert(DB, TestUserTable.class, "id", "name", "age")
+                .row(2515, "Mia", 30)
+                .execute();
+
+            Console.log("Does Mia exist? " + SELECT_MANAGER.executeHasResult()).container(QueryonEngine.LOGGER).send();
+
+            /* Delete the new user */
+            DeletionManager.delete(DB, TestUserTable.class)
+                .where(Expression.of("name").isEqualTo("Mia"))
+                .execute();
+
+            Console.log("Does Mia exist after deletion? " + SELECT_MANAGER.executeHasResult()).container(QueryonEngine.LOGGER).send();
+        }
+
+        {
+            
+        }
     }
 }

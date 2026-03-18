@@ -14,8 +14,8 @@ The objective of this project is to provide a simple and intuitive API to build 
 ## Unsuported SQL features
 - Views
 - Triggers
-- Stored procedures
-- Window functions
+- Transactions
+- Select JOINS, GROUP BY and HAVING
 
 ## How to install
 
@@ -216,19 +216,19 @@ public class User implements SQLSerializable<User> {
     @IColumnField(name = "age")
     private int age;
 
-    @IColumnField(name = "money", defaultValue = "250", checkConstraint = "money >= 0")
+    @IColumnField(name = "money")
     private int money;
 
-    @IColumnField(name = "start_date", defaultValue = "CURRENT_TIMESTAMP")
-    private Date startDate;
+    @IColumnField(name = "start_date")
+    private Date startDate = new Date(0); // Default value for start_date column, but this doesn't support Expression CHECK constraint. To add constraints you have to add them manually in the table definition using the addCheckConstraints method as shown in the previous example.
 
-    @IColumnField(name = "end_date", defaultValue = "0000-00-00")
+    @IColumnField(name = "end_date")
     private Date endDate;
 
-    @IColumnField(name = "another_date", defaultValue = "CONVERTED_FROM_JAVA_DATE")
+    @IColumnField(name = "another_date")
     private Date anotherDate;
 
-    @IColumnField(name = "example", enumClass = ExampleEnum.class)
+    @IColumnField(name = "example")
     private ExampleEnum example;
 }
 
@@ -280,13 +280,17 @@ InsertionManager.insert(DB, TestUserTable.class, "id", "name", "age")
     .rows(InsertionManager.of(2, "Bob", 25), InsertionManager.of(3, "Carol", 28))
     .execute();
 ```
+This correspond to the SQL query `INSERT INTO test_table (id, name, age) VALUES (1, 'Alice', 30), (2, 'Bob', 25), (3, 'Carol', 28);`.
+
 Or you can do an insertion while ignoring duplicates like this :
 ```java
-InsertionManager.insertIgnore(DB, TestUserTable.class, "id", "name", "age")
+InsertionManager.insertOrIgnore(DB, TestUserTable.class, "id", "name", "age")
     .row(1, "Alice", 30)
     .rows(InsertionManager.of(2, "Bob", 25), InsertionManager.of(3, "Carol", 28))
     .execute();
 ```
+This correspond to the SQL query `INSERT OR IGNORE INTO test_table (id, name, age) VALUES (1, 'Alice', 30), (2, 'Bob', 25), (3, 'Carol', 28);`.
+
 Alternatively, you can setup one ore multiple conflict resolution strategy for the insertion like this :
 ```java
 //TODO
@@ -295,9 +299,58 @@ Alternatively, you can setup one ore multiple conflict resolution strategy for t
 ### Select
 You can do a simple select like this :
 ```java
-SelectionManager.select(DATA_BASE, UserTable.class).execute();
+SelectionManager.select(DATA_BASE, UserTable.class).executeSerializable(User.class);
+```
+This correspond to the SQL query `SELECT * FROM users;`.
+
+Note you can replace the `select` method with `selectDistinct` if you want to select only distinct rows like this :
+```java
+SelectionManager.selectDistinct(DATA_BASE, UserTable.class).executeSerializable(User.class);
+```
+This correspond to the SQL query `SELECT DISTINCT * FROM users;`.
+
+You can also add a where clause to the select like this :
+```java
+SelectionManager.select(DATA_BASE, UserTable.class)
+    .where(Expression.of("age").greaterThan(25))
+    .executeSerializable(User.class);
+```
+This correspond to the SQL query `SELECT * FROM users WHERE age > 25;`.
+
+You can add an order by clause to the select like this :
+```java
+SelectionManager.select(DATA_BASE, UserTable.class)
+    .where(Expression.of("age").greaterThan(25))
+    .orderBy("age", EnumOrder.DESC)
+    .orderBy("name", EnumOrder.ASC)
+    .executeSerializable(User.class);
+```
+This correspond to the SQL query `SELECT * FROM users WHERE age > 25 ORDER BY age DESC, name ASC;`.
+
+You can also add a limit clause to the select like this :
+```java
+SelectionManager.select(DATA_BASE, UserTable.class)
+    .where(Expression.of("age").greaterThan(25))
+    .orderBy("age", EnumOrder.DESC)
+    .limit(10)
+    .executeSerializable(User.class);
+```
+This correspond to the SQL query `SELECT * FROM users WHERE age > 25 ORDER BY age DESC LIMIT 10;`.
+
+Note that Queryon selection manager allows you to get the result as an object, a list of objects or a primitive value.
+```java
+SelectionManager.select(DATA_BASE, UserTable.class).executeSerializable(User.class); // Will return a User object if the query result contain only one row, otherwise it will throw an exception
+SelectionManager.select(DATA_BASE, UserTable.class).executeList(User.class); // Will return a List<User> object containing all the rows of the query result, even if there's only one row or no row at all (in that case it will return an empty list)
+SelectionManager.select(DATA_BASE, UserTable.class).executePrimitive(int.class); // Will return an int value if the query result contain only one row and one column, otherwise it will throw an exception
+SelectionManager.select(DATA_BASE, UserTable.class).executeHasResult(); // Will return true if the query result contain at least one row, false otherwise
+SelectionManager.select(DATA_BASE, UserTable.class).executeCountResults(); // Will return the count of results returned by the query, or 0 if the query returns no results or if an error occurs
 ```
 
 ### Update
 
 ### Delete
+```java
+DeletionManager.delete(DATA_BASE, UserTable.class)
+    .where(Expression.of("age").lessThan(25))
+    .execute();
+```

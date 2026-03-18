@@ -97,7 +97,7 @@ class TableTest {
         final Table TABLE = new Table(DB) {
             @Override public String name() { return "test_table"; }
         };
-        assertDoesNotThrow(() -> TABLE.dropTable(DB), "dropTable should not throw an exception when dropping an existing table");
+        assertDoesNotThrow(() -> TABLE.dropTable(), "dropTable should not throw an exception when dropping an existing table");
     }
 
     @Test void testDropAllRows() {
@@ -105,7 +105,7 @@ class TableTest {
         final Table TABLE = new Table(DB) {
             @Override public String name() { return "test_table"; }
         };
-        assertDoesNotThrow(() -> TABLE.dropAllRows(DB), "dropAllRows should not throw an exception when dropping all rows from an existing table");
+        assertDoesNotThrow(() -> TABLE.dropAllRows(), "dropAllRows should not throw an exception when dropping all rows from an existing table");
     }
 
     @Test void testCreateColumnIllegalArgs() {
@@ -136,7 +136,8 @@ class TableTest {
     }
 
     @Test void testCreateColumnFromAnnotation() {
-        final DataBase DB = setupDataBase("testCreateColumnFromAnnotation").registerTable(TestFoodTable.class);
+        final DataBase DB = setupDataBase("testCreateColumnFromAnnotation")
+            .registerTable(TestFoodTable.class);
         final Table TABLE = new Table(DB) {
             @Override public String name() { return "test_table"; }
         };
@@ -163,13 +164,13 @@ class TableTest {
     
     private static class TestAnnotatedClass extends SQLSerializable<TestAnnotatedClass> {
         @IColumnField(autoIncrement = true, primaryKey = true)
-        private int id;
+        private int id ;
 
         @IColumnField(name = "name", charLimit = 255, notNull = true)
-        private String name;
+        private String name = "default_name";
 
         @IColumnField(charLimit = 36, unique = true)
-        private String uuid;
+        private String uuid = "default_uuid";
 
         @IColumnField(name = "food_id", charLimit = 20, foreignKey = @IForeignKey(table = TestFoodTable.class, column = "id", onDelete = EnumForeginKeyAction.CASCADE))
         private String foodId;

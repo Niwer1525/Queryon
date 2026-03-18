@@ -1,22 +1,15 @@
 package niwer.queryon.queries.interaction;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import niwer.queryon.DataBase;
-import niwer.queryon.queries.InteractionManager;
+import niwer.queryon.queries.Expression;
+import niwer.queryon.queries.QueryManager;
 import niwer.queryon.tables.Table;
 
-public class DeletionManager {
+public class DeletionManager extends QueryExecutor {
 
-    private final DataBase DATA_BASE;
-    private final Table TABLE;
-    private final Map<String, Object> WHERE_CONDITIONS = new HashMap<>();
+    private Expression whereCondition;
 
-    private DeletionManager(DataBase db, Class<? extends Table> table) {
-        this.DATA_BASE = db;
-        this.TABLE = db.getTable(table);
-    }
+    private DeletionManager(DataBase db, Class<? extends Table> table) { super(db, table); }
 
     /**
      * Starts a deletion query for the specified table.
@@ -24,24 +17,33 @@ public class DeletionManager {
      */
     public static DeletionManager delete(DataBase db, Class<? extends Table> table) { return new DeletionManager(db, table); }
 
-    public DeletionManager where(String column, Object value) {
-        WHERE_CONDITIONS.put(column, value);
+    /**
+     * Adds a WHERE condition to the deletion query.
+     * 
+     * @param expression The expression representing the WHERE condition
+     * @return The DeletionManager instance for chaining
+     * 
+     * @see Expression for building expressions representing WHERE conditions
+     */
+    public final DeletionManager where(Expression expression) {
+        this.whereCondition = expression;
         return this;
     }
     
+    @Override
+    protected String buildQuery() {
+        final StringBuilder QUERY = new StringBuilder("DELETE FROM ").append(TABLE.name());
+
+        /* Add WHERE condition */
+        if (this.whereCondition != null) QUERY.append(" WHERE ").append(this.whereCondition);
+
+        return QUERY.toString();
+    }
+
+    /**
+     * Executes the deletion query on the database.
+     */
     public void execute() {
-        final StringBuilder QUERY = new StringBuilder("DELETE FROM ").append(TABLE.name()).append(" WHERE ");
-
-        /* Add columns */
-        for (final Map.Entry<String, Object> ENTRY : WHERE_CONDITIONS.entrySet()) {
-            QUERY.append(ENTRY.getKey()).append(" = ");
-            if (ENTRY.getValue() instanceof String) QUERY.append("'").append(ENTRY.getValue()).append("'");
-            else QUERY.append(ENTRY.getValue());
-            QUERY.append(" AND ");
-        }
-        QUERY.setLength(QUERY.length() - 5); // Remove the last " AND "
-        QUERY.append(";");
-
-        InteractionManager.query(this.DATA_BASE, QUERY.toString());
+        QueryManager.query(this.DATA_BASE, this.buildQuery());
     }
 }

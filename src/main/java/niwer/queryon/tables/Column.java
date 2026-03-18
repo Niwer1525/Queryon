@@ -6,6 +6,7 @@ import java.util.Date;
 
 import niwer.queryon.DataBase;
 import niwer.queryon.QueryonEngine;
+import niwer.queryon.SQLSerializable;
 import niwer.queryon.queries.Expression;
 import niwer.queryon.tables.api.IColumnField;
 
@@ -52,10 +53,12 @@ public class Column {
         if (annotation.primaryKey()) primaryKey(); // This will also set notNull and unique to true
         if (annotation.autoIncrement()) autoIncrement();
         if (annotation.foreignKey().table() != Table.class) foreignKey(annotation.foreignKey().table(), annotation.foreignKey().column(), annotation.foreignKey().onDelete());
-        if (!annotation.defaultValue().isEmpty()) defaultValue(annotation.defaultValue());
+        
+        final Object DEFAULT_VALUE = SQLSerializable.getDataFromField(field);
+        if (DEFAULT_VALUE != null) defaultValue(DEFAULT_VALUE);
     }
 
-    private String[] enumToStrings(Class<? extends Enum> enumType) {
+    private static final String[] enumToStrings(Class<? extends Enum> enumType) {
         return Arrays.stream(enumType.getEnumConstants()).map(Enum::name).toArray(String[]::new);
     }
 

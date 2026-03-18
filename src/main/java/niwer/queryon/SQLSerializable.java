@@ -1,6 +1,7 @@
 package niwer.queryon;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -17,7 +18,7 @@ public abstract class SQLSerializable<T> {
 
     public SQLSerializable() {} // Default constructor for objectification
 
-    public final T objectify(ResultSet resultSet) throws SQLException {
+    public final void objectify(ResultSet resultSet) throws SQLException {
         final Map<Field, IColumnField> FIELDS = getFieldsWithAnnotation();
         for (final Map.Entry<Field, IColumnField> ENTRY : FIELDS.entrySet()) {
             final Field FIELD = ENTRY.getKey();
@@ -38,7 +39,6 @@ public abstract class SQLSerializable<T> {
                 throw new RuntimeException("Failed to access field " + FIELD.getName() + " during objectification of " + this.getClass().getName(), EX);
             }
         }
-        throw new UnsupportedOperationException("Objectification is not implemented yet for " + this.getClass().getName());
     }
 
     private Map<Field, IColumnField> getFieldsWithAnnotation() {
@@ -48,5 +48,31 @@ public abstract class SQLSerializable<T> {
             if (FIELD.isAnnotationPresent(IColumnField.class)) FIELDS.put(FIELD, FIELD.getAnnotation(IColumnField.class));
         }
         return FIELDS;
+    }
+
+    /**
+     * Retrieves the value of a field, used for getting default values for columns during insertion.
+     * 
+     * @param field The field to retrieve the value from
+     * @return The value of the field
+     * @throws RuntimeException if the field cannot be accessed
+     */
+    public static final Object getDataFromField(Field field) { // Data
+        try {
+            if (field == null) throw new IllegalArgumentException("Field cannot be null.");
+            field.setAccessible(true);
+            
+            final Object TARGET;
+            if (Modifier.isStatic(field.getModifiers())) TARGET = null;
+            else {
+                final var CONSTRUCTOR = field.getDeclaringClass().getDeclaredConstructor();
+                CONSTRUCTOR.setAccessible(true);
+                TARGET = CONSTRUCTOR.newInstance();
+            }
+            
+            return field.get(TARGET);
+        } catch (final ReflectiveOperationException EX) {
+            throw new RuntimeException("Failed to access field " + field.getName() + " during retrieval of default value for column", EX);
+        }
     }
 }

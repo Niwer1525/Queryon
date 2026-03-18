@@ -1,6 +1,7 @@
 package niwer.queryon.tables;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -36,6 +37,11 @@ class EnumColumnTypesTest {
             assertTrue(FIELD_2.isAnnotationPresent(IColumnField.class));
             assertEquals(0, FIELD_2.getAnnotation(IColumnField.class).charLimit());
             assertEquals(EnumColumnTypes.TEXT, EnumColumnTypes.fromJava(FIELD_2)); // This field has no charLimit, so it should be treated as TEXT
+            
+            final Field FIELD_3 = VarCharTestClass.class.getDeclaredField("noAnnotationField");
+            assertNotNull(FIELD_3);
+            assertFalse(FIELD_3.isAnnotationPresent(IColumnField.class));
+            assertEquals(EnumColumnTypes.TEXT, EnumColumnTypes.fromJava(FIELD_3)); // This field has no annotation, so it should be treated as TEXT
         } catch (NoSuchFieldException EX) {
             throw new RuntimeException(EX);
         }
@@ -70,5 +76,8 @@ class EnumColumnTypesTest {
 
         @IColumnField(charLimit = 0)
         private String thisFieldShouldBeText;
+
+        @SuppressWarnings("unused") // Testing what happens without annotation. But the field isn't used directly so we need to suppress the unused warning
+        private String noAnnotationField;
     }
 }

@@ -63,5 +63,10 @@ public class TestUserTable extends Table {
         public String name() { return name; }
 
         public int age() { return age; }
+        
+        @Override
+        public String toString() {
+            return "TestUser{id=" + id + ", name='" + name + "', age=" + age + "}";
+        }
     }
 }

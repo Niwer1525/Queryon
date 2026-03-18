@@ -15,7 +15,7 @@ import niwer.queryon.DataBase;
 import niwer.queryon.TestUserTable;
 import niwer.queryon.TestUserTable.TestUser;
 
-class InteractionManagerTest {
+class QueryManagerTest {
 
     @TempDir
     private static File tempDir;
@@ -26,19 +26,19 @@ class InteractionManagerTest {
     }
 
     public static void addUsers(DataBase DB) {
-        InteractionManager.query(DB, """
+        QueryManager.query(DB, """
             INSERT INTO test_table (id, name, age) VALUES (?, ?, ?)
         """, 1, "Alice", 30);
 
-        InteractionManager.query(DB, """
+        QueryManager.query(DB, """
             INSERT INTO test_table (id, name, age) VALUES (?, ?, ?)
         """, 2, "Romain", 20);
 
-        InteractionManager.query(DB, """
+        QueryManager.query(DB, """
             INSERT INTO test_table (id, name, age) VALUES (?, ?, ?)
         """, 3, "Lou", 20);
 
-        InteractionManager.query(DB, """
+        QueryManager.query(DB, """
             INSERT INTO test_table (id, name, age) VALUES (?, ?, ?)
         """, 4, "Chloée", 20);
     }
@@ -46,22 +46,22 @@ class InteractionManagerTest {
     @Test void testNullParameters() {
         final DataBase DB = setupDataBase("null_parameters");
         final Object[] EMPTY_PARAMS = new Object[]{};
-        assertThrows(IllegalArgumentException.class, () -> InteractionManager.query(null, null, "SELECT * FROM test_table", EMPTY_PARAMS));
-        assertThrows(IllegalArgumentException.class, () -> InteractionManager.query(DB, null, null, EMPTY_PARAMS));
-        assertThrows(IllegalArgumentException.class, () -> InteractionManager.query(DB, null, "", EMPTY_PARAMS));
+        assertThrows(IllegalArgumentException.class, () -> QueryManager.query(null, null, "SELECT * FROM test_table", EMPTY_PARAMS));
+        assertThrows(IllegalArgumentException.class, () -> QueryManager.query(DB, null, null, EMPTY_PARAMS));
+        assertThrows(IllegalArgumentException.class, () -> QueryManager.query(DB, null, "", EMPTY_PARAMS));
     }
 
     @Test void testNoResultQueryNullParameters() {
         final DataBase DB = setupDataBase("no_result_null_parameters");
-        assertThrows(IllegalArgumentException.class, () -> InteractionManager.query(null, "INSERT INTO test_table (id, name, age) VALUES (?, ?, ?)", 1, "Alice", 30));
-        assertThrows(IllegalArgumentException.class, () -> InteractionManager.query(DB, (String)null, "INSERT INTO test_table (id, name, age) VALUES (?, ?, ?)", 1, "Alice", 30));
-        assertThrows(IllegalArgumentException.class, () -> InteractionManager.query(DB, "", "", 1, "Alice", 30));
+        assertThrows(IllegalArgumentException.class, () -> QueryManager.query(null, "INSERT INTO test_table (id, name, age) VALUES (?, ?, ?)", 1, "Alice", 30));
+        assertThrows(IllegalArgumentException.class, () -> QueryManager.query(DB, (String)null, "INSERT INTO test_table (id, name, age) VALUES (?, ?, ?)", 1, "Alice", 30));
+        assertThrows(IllegalArgumentException.class, () -> QueryManager.query(DB, "", "", 1, "Alice", 30));
     }
 
     @Test void testNoResultQuery() {
         assertDoesNotThrow(() -> {
             final DataBase DB = setupDataBase("no_result");
-            InteractionManager.query(DB, """
+            QueryManager.query(DB, """
                 INSERT INTO test_table (id, name, age) VALUES (?, ?, ?)
             """, 0, "Vanessa", 35);
         });
@@ -71,7 +71,7 @@ class InteractionManagerTest {
         final DataBase DB = setupDataBase("single_result_serializable");
         addUsers(DB);
 
-        final Object RESULT = InteractionManager.querySerializable(DB, TestUser.class, """
+        final Object RESULT = QueryManager.querySerializable(DB, TestUser.class, """
             SELECT * FROM test_table WHERE name = ?
         """, "Alice");
         assertNotNull(RESULT);
@@ -82,7 +82,7 @@ class InteractionManagerTest {
         final DataBase DB = setupDataBase("single_result");
         addUsers(DB);
 
-        final Object RESULT = InteractionManager.query(DB, TestUser.class, """
+        final Object RESULT = QueryManager.query(DB, TestUser.class, """
             SELECT * FROM test_table WHERE name = ?
         """, "Alice");
         assertNotNull(RESULT);
@@ -93,7 +93,7 @@ class InteractionManagerTest {
         final DataBase DB = setupDataBase("multiple_result");
         addUsers(DB);
 
-        final Object RESULT = InteractionManager.queryList(DB, TestUser.class, """
+        final Object RESULT = QueryManager.queryList(DB, TestUser.class, """
             SELECT * FROM test_table
         """);
         assertNotNull(RESULT);
@@ -105,7 +105,7 @@ class InteractionManagerTest {
         addUsers(DB);
 
         assertThrows(IllegalStateException.class, () -> {
-            InteractionManager.queryList(DB, TestUser.class, """
+            QueryManager.queryList(DB, TestUser.class, """
                 SELECT * FROM test_table WHERE name = ?
             """, "Alice");
         });
@@ -115,7 +115,7 @@ class InteractionManagerTest {
         final DataBase DB = setupDataBase("primitive_result");
         addUsers(DB);
 
-        final Object RESULT = InteractionManager.queryPrimitive(DB, Integer.class, """
+        final Object RESULT = QueryManager.queryPrimitive(DB, Integer.class, """
             SELECT COUNT(*) FROM test_table
         """);
         assertNotNull(RESULT);
@@ -126,7 +126,7 @@ class InteractionManagerTest {
         final DataBase DB = setupDataBase("primitive_no_result");
         addUsers(DB);
 
-        final Object RESULT = InteractionManager.queryPrimitive(DB, Integer.class, """
+        final Object RESULT = QueryManager.queryPrimitive(DB, Integer.class, """
             SELECT COUNT(*) FROM test_table WHERE name = ?
         """, "NonExistingName");
         assertNotNull(RESULT);
@@ -138,37 +138,37 @@ class InteractionManagerTest {
         final DataBase DB = setupDataBase("primitive_functions");
         addUsers(DB);
 
-        final Object COUNT_RESULT = InteractionManager.queryInt(DB, """
+        final Object COUNT_RESULT = QueryManager.queryInt(DB, """
             SELECT COUNT(*) FROM test_table
         """);
         assertNotNull(COUNT_RESULT);
         assertInstanceOf(Integer.class, COUNT_RESULT);
 
-        final Object STRING_RESULT = InteractionManager.queryString(DB, """
+        final Object STRING_RESULT = QueryManager.queryString(DB, """
             SELECT name FROM test_table WHERE id = ?
         """, 1);
         assertNotNull(STRING_RESULT);
         assertInstanceOf(String.class, STRING_RESULT);
 
-        final Object BOOLEAN_RESULT = InteractionManager.queryBoolean(DB, """
+        final Object BOOLEAN_RESULT = QueryManager.queryBoolean(DB, """
             SELECT age > ? FROM test_table WHERE name = ?
         """, 25, "Alice");
         assertNotNull(BOOLEAN_RESULT);
         assertInstanceOf(Boolean.class, BOOLEAN_RESULT);
 
-        final Object DOUBLE_RESULT = InteractionManager.queryDouble(DB, """
+        final Object DOUBLE_RESULT = QueryManager.queryDouble(DB, """
             SELECT age + 0.5 FROM test_table WHERE name = ?
         """, "Alice");
         assertNotNull(DOUBLE_RESULT);
         assertInstanceOf(Double.class, DOUBLE_RESULT);
 
-        final Object LONG_RESULT = InteractionManager.queryLong(DB, """
+        final Object LONG_RESULT = QueryManager.queryLong(DB, """
             SELECT age + 1 FROM test_table WHERE name = ?
         """, "Alice");
         assertNotNull(LONG_RESULT);
         assertInstanceOf(Long.class, LONG_RESULT);
 
-        final Object FLOAT_RESULT = InteractionManager.queryFloat(DB, """
+        final Object FLOAT_RESULT = QueryManager.queryFloat(DB, """
             SELECT age + 0.5 FROM test_table WHERE name = ?
         """, "Alice");
         assertNotNull(FLOAT_RESULT);

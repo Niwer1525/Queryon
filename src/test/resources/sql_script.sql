@@ -1,19 +1,3 @@
-/*
-    Comprehensive SQL reference script for SQLite.
-    Goal: demonstrate practical patterns for CREATE/INSERT/SELECT/UPDATE/DELETE
-    plus constraints, joins, CTEs, windows, indexes, transactions, views, triggers.
-
-    Notes:
-    - SQL dialects differ. This script is SQLite-oriented.
-    - Some statements require recent SQLite versions (RETURNING, UPDATE FROM, window functions).
-*/
-
-/* ------------------------------------------------------------- */
-/* 0) Cleanup                                                    */
-/* ------------------------------------------------------------- */
-DROP VIEW IF EXISTS v_active_users;
-DROP TRIGGER IF EXISTS trg_users_updated_at;
-
 /* ------------------------------------------------------------- */
 /* 2) INSERT - all common forms                                 */
 /* ------------------------------------------------------------- */
@@ -48,23 +32,6 @@ WHERE department_id = 1;
 /* ------------------------------------------------------------- */
 /* 3) SELECT - projections, filters, joins, groups, CTE, window */
 /* ------------------------------------------------------------- */
-
-/* 3.1 Basic select */
-SELECT * FROM users;
-
-SELECT id, username AS user_name, email FROM users;
-
-SELECT DISTINCT department_id FROM users;
-
-/* 3.2 WHERE conditions */
-SELECT * FROM users WHERE username GLOB '*o*';
-SELECT * FROM users WHERE NOT is_active = 1;
-
-/* 3.3 ORDER BY / LIMIT / OFFSET */
-SELECT id, username, salary
-FROM users
-ORDER BY salary DESC, username ASC
-LIMIT 10 OFFSET 0;
 
 /* 3.4 Expressions and CASE */
 SELECT
@@ -190,34 +157,6 @@ FROM (
     SELECT 2 AS user_id, 500 AS extra
 ) AS bonus
 WHERE users.id = bonus.user_id;
-
-/* 4.5 UPDATE with RETURNING */
-UPDATE users
-SET is_active = 0
-WHERE id = 2
-RETURNING id, username, is_active;
-
-/* ------------------------------------------------------------- */
-/* 5) DELETE - basic, conditional, returning, CTE-driven        */
-/* ------------------------------------------------------------- */
-
-/* 5.1 Basic delete */
-DELETE FROM order_items
-WHERE order_id = 1000 AND product_id = 101;
-
-/* 5.2 Delete with RETURNING */
-DELETE FROM users
-WHERE id = 999
-RETURNING id, username;
-
-/* 5.3 Delete using CTE */
-WITH to_remove AS (
-    SELECT id
-    FROM users
-    WHERE is_active = 0
-)
-DELETE FROM users
-WHERE id IN (SELECT id FROM to_remove);
 
 /* ------------------------------------------------------------- */
 /* 6) VIEW / INDEX / TRIGGER                                    */

@@ -29,7 +29,17 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue(0);
+                .defaultValue(0, Expression.of("test_column").isLessThan(100));
+        });
+    }
+
+    @Test void testColumnCreationNoDB() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            new Column(null, "test_column", EnumColumnTypes.INT, 0, null)
+                .autoIncrement()
+                .notNull()
+                .unique()
+                .defaultValue(0, Expression.of("test_column").isLessThan(100));
         });
     }
 
@@ -39,7 +49,7 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue(25.0);
+                .defaultValue(25.0, Expression.of("test_column").isLessThan(100.0));
         });
     }
 
@@ -49,7 +59,7 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue("TestContent");
+                .defaultValue("TestContent", Expression.of("test_column").isNotEqualTo("TestContent"));
         });
 
         assertThrows(IllegalArgumentException.class, () -> {
@@ -57,7 +67,7 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue("TestContent");
+                .defaultValue("TestContent", Expression.of("test_column").isNotEqualTo("TestContent"));
         });
     }
 
@@ -67,7 +77,7 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue("TestContent");
+                .defaultValue("TestContent", Expression.of("test_column").isNotEqualTo("TestContent"));
         });
     }
 
@@ -77,7 +87,7 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue(true);
+                .defaultValue(true, Expression.of("test_column").isEqualTo(true));
         });
     }
 
@@ -87,7 +97,7 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue("0000-00-00");
+                .defaultValue("CURRENT_TIMESTAMP", Expression.of("test_column").isEqualTo("CURRENT_TIMESTAMP"));
         });
 
         assertDoesNotThrow(() -> {
@@ -95,40 +105,70 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue("0000-00-00 00:00:00");
+                .defaultValue("CURRENT_TIMESTAMP", Expression.of("test_column").isEqualTo("CURRENT_TIMESTAMP"));
         });
 
-        assertDoesNotThrow(() -> {
-            new Column(setupDataBase("test"), "test_column", EnumColumnTypes.DATE, 0, null)
-                .autoIncrement()
-                .notNull()
-                .unique()
-                .defaultValue(new java.util.Date());
-        });
+        {
+            assertDoesNotThrow(() -> {
+                new Column(setupDataBase("test"), "test_column", EnumColumnTypes.DATE, 0, null)
+                    .autoIncrement()
+                    .notNull()
+                    .unique()
+                    .defaultValue("0000-00-00", Expression.of("test_column").isEqualTo("0000-00-00"));
+            });
+            
+            assertDoesNotThrow(() -> {
+                new Column(setupDataBase("test"), "test_column", EnumColumnTypes.DATE_TIME, 0, null)
+                    .autoIncrement()
+                    .notNull()
+                    .unique()
+                    .defaultValue("0000-00-00 00:00:00", Expression.of("test_column").isEqualTo("0000-00-00 00:00:00"));
+            });
+        }
+        
+        {
+            assertDoesNotThrow(() -> {
+                new Column(setupDataBase("test"), "test_column", EnumColumnTypes.DATE, 0, null)
+                    .autoIncrement()
+                    .notNull()
+                    .unique()
+                    .defaultValue(new java.util.Date(), Expression.of("test_column").isEqualTo("CURRENT_TIMESTAMP"));
+            });
 
-        assertThrows(IllegalArgumentException.class, () -> {
-            new Column(setupDataBase("test"), "test_column", EnumColumnTypes.DATE, 0, null)
-                .autoIncrement()
-                .notNull()
-                .unique()
-                .defaultValue(1225);
-        });
+            assertDoesNotThrow(() -> {
+                new Column(setupDataBase("test"), "test_column", EnumColumnTypes.DATE_TIME, 0, null)
+                    .autoIncrement()
+                    .notNull()
+                    .unique()
+                    .defaultValue(new java.util.Date(), Expression.of("test_column").isEqualTo("CURRENT_TIMESTAMP"));
+            });
+        }
 
-        assertThrows(IllegalArgumentException.class, () -> {
-            new Column(setupDataBase("test"), "test_column", EnumColumnTypes.DATE_TIME, 0, null)
-                .autoIncrement()
-                .notNull()
-                .unique()
-                .defaultValue(1225);
-        });
-
-        assertThrows(IllegalArgumentException.class, () -> {
-            new Column(setupDataBase("test"), "test_column", EnumColumnTypes.DATE_TIME, 0, null)
-                .autoIncrement()
-                .notNull()
-                .unique()
-                .defaultValue("0000-00-00");
-        });
+        {
+            assertThrows(IllegalArgumentException.class, () -> {
+                new Column(setupDataBase("test"), "test_column", EnumColumnTypes.DATE, 0, null)
+                    .autoIncrement()
+                    .notNull()
+                    .unique()
+                    .defaultValue(1225, Expression.of("test_column").isLessThan(100));
+            });
+    
+            assertThrows(IllegalArgumentException.class, () -> {
+                new Column(setupDataBase("test"), "test_column", EnumColumnTypes.DATE_TIME, 0, null)
+                    .autoIncrement()
+                    .notNull()
+                    .unique()
+                    .defaultValue(1225, Expression.of("test_column").isLessThan(100));
+            });
+    
+            assertThrows(IllegalArgumentException.class, () -> {
+                new Column(setupDataBase("test"), "test_column", EnumColumnTypes.DATE_TIME, 0, null)
+                    .autoIncrement()
+                    .notNull()
+                    .unique()
+                    .defaultValue("0000-00-00", Expression.of("test_column").isEqualTo("0000-00-00"));
+            });
+        }
     }
 
     @Test void testColumnCreationEnum() {
@@ -137,7 +177,7 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue(TestEnum.VALUE1);
+                .defaultValue(TestEnum.VALUE1); // No expression supported for ENUM default values, as they must be constant
         });
     }
 
@@ -157,7 +197,7 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue("INVALID_VALUE");
+                .defaultValue("INVALID_VALUE", Expression.of("test_column").isEqualTo("INVALID_VALUE"));
         });
     }
 
@@ -174,7 +214,9 @@ class ColumnTest {
     @Test void testForeignKeyDefinition() {
         assertDoesNotThrow(() -> {
             new Column(setupDataBase("test"), "user_id", EnumColumnTypes.INT, 0, null)
-                .foreignKey(TestUserTable.class, "id", EnumForeginKeyAction.SET_NULL);
+                .foreignKey(TestUserTable.class, "id", EnumForeginKeyAction.SET_NULL)
+                .foreignKey(TestUserTable.class, null, EnumForeginKeyAction.SET_NULL)
+            ;
         });
     }
 

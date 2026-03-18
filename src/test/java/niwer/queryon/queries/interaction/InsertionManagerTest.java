@@ -12,7 +12,6 @@ import org.junit.jupiter.api.io.TempDir;
 import niwer.queryon.DataBase;
 import niwer.queryon.TestUserTable;
 import niwer.queryon.TestUserTable.TestUser;
-import niwer.queryon.queries.InteractionManager;
 
 class InsertionManagerTest {
 
@@ -29,15 +28,15 @@ class InsertionManagerTest {
 
         final String INSERT = InsertionManager.insert(DB, TestUserTable.class, "id", "name", "age")
             .row(1, "Alice", 30)
-            .values(InsertionManager.of(2, "Bob", 25), InsertionManager.of(3, "Carol", 28))
+            .rows(InsertionManager.of(2, "Bob", 25), InsertionManager.of(3, "Carol", 28))
             .buildQuery();
-        assertEquals("INSERT INTO test_table (id, name, age) VALUES (1, 'Alice', 30), (2, 'Bob', 25), (3, 'Carol', 28);", INSERT);
+        assertEquals("INSERT INTO test_table (id, name, age) VALUES (1, 'Alice', 30), (2, 'Bob', 25), (3, 'Carol', 28)", INSERT);
 
         final String INSERT_OR_IGNORE = InsertionManager.insertOrIgnore(DB, TestUserTable.class, "id", "name", "age")
             .row(1, "Alice", 30)
-            .values(InsertionManager.of(2, "Bob", 25), InsertionManager.of(3, "Carol", 28))
+            .rows(InsertionManager.of(2, "Bob", 25), InsertionManager.of(3, "Carol", 28))
             .buildQuery();
-        assertEquals("INSERT OR IGNORE INTO test_table (id, name, age) VALUES (1, 'Alice', 30), (2, 'Bob', 25), (3, 'Carol', 28);", INSERT_OR_IGNORE);
+        assertEquals("INSERT OR IGNORE INTO test_table (id, name, age) VALUES (1, 'Alice', 30), (2, 'Bob', 25), (3, 'Carol', 28)", INSERT_OR_IGNORE);
     }
 
     @Test void testInsertionInvalidValues() {
@@ -59,12 +58,10 @@ class InsertionManagerTest {
 
         InsertionManager.insert(DB, TestUserTable.class, "id", "name", "age")
             .row(1, "Alice", 30)
-            .values(InsertionManager.of(2, "Bob", 25), InsertionManager.of(3, "Carol", 28))
+            .rows(InsertionManager.of(2, "Bob", 25), InsertionManager.of(3, "Carol", 28))
             .execute();
 
-        final List<TestUser> USERS = InteractionManager.queryList(DB, TestUser.class, """
-            SELECT * FROM test_table
-        """);
+        final List<TestUser> USERS = SelectionManager.select(DB, TestUserTable.class).executeList(TestUser.class);
         assertEquals(3, USERS.size());
         assertEquals("Alice", USERS.get(0).name());
         assertEquals("Bob", USERS.get(1).name());

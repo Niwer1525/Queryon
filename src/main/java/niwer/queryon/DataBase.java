@@ -9,7 +9,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import niwer.lumen.Console;
-import niwer.queryon.queries.InteractionManager;
+import niwer.queryon.queries.QueryManager;
 import niwer.queryon.tables.Table;
 
 /**
@@ -165,7 +165,7 @@ public class DataBase {
     protected Table dropTable(Class<? extends Table> tableClass) {
         final Table table = this.getTable(tableClass);
         Console.log("Unregistering and dropping table " + table.name()).type(QueryonLogTypes.SQL).container(QueryonEngine.LOGGER).send();
-        InteractionManager.query(this, "DROP TABLE IF EXISTS " + table.name() + ";");
+        QueryManager.query(this, "DROP TABLE IF EXISTS " + table.name() + ";");
         REGISTERED_TABLES.remove(table);
         return table;
     }

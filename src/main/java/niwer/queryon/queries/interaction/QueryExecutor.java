@@ -17,6 +17,6 @@ public abstract class QueryExecutor {
         this.DATA_BASE = dataBase;
         this.TABLE = dataBase.getTable(tableClas);
     }
-
+    
     protected abstract String buildQuery();
 }

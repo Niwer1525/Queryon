@@ -3,9 +3,6 @@ package niwer.queryon.queries;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import niwer.queryon.tables.api.EnumExpressionCondition;
-import niwer.queryon.tables.api.IExpression;
-
 /**
  * This class represents a SQL expression that can be used in WHERE clauses, JOIN conditions, and other parts of SQL queries.
  * It provides a fluent API for building complex expressions using logical operators (AND, OR) and comparison operators (=, <>, >, <, >=, <=).
@@ -24,63 +21,6 @@ public class Expression {
     @Override
     public int hashCode() {
         return this.COLUMN.hashCode() + (sql != null ? sql.hashCode() : 0) + AND_EXPRESSIONS.hashCode() + OR_EXPRESSIONS.hashCode();
-    }
-    
-    public final static Expression of(IExpression expression) {
-        if (expression == null) throw new IllegalArgumentException("Expression cannot be null");
-        if (expression.values().length > 0 && (expression.condition() == EnumExpressionCondition.IS_NULL || expression.condition() == EnumExpressionCondition.IS_NOT_NULL))
-            throw new IllegalArgumentException("IS NULL and IS NOT NULL conditions cannot have values");
-
-        final Expression EXPRESSION = new Expression(expression.column());
-        if(expression.condition() == EnumExpressionCondition.IS_NULL) return EXPRESSION.isNull();
-        if(expression.condition() == EnumExpressionCondition.IS_NOT_NULL) return EXPRESSION.isNotNull();
-
-        /* Greater Than */
-        if(expression.condition() == EnumExpressionCondition.GREATER_THAN)
-            return EXPRESSION.isGreaterThan(parseSingleNumberValue(expression.values(), EnumExpressionCondition.GREATER_THAN)[0]);
-        if(expression.condition() == EnumExpressionCondition.GREATER_OR_EQUAL)
-            return EXPRESSION.isGreaterThanOrEqualTo(parseSingleNumberValue(expression.values(), EnumExpressionCondition.GREATER_OR_EQUAL)[0]);
-
-        /* Less Than */
-        if(expression.condition() == EnumExpressionCondition.LESS_THAN)
-            return EXPRESSION.isLessThan(parseSingleNumberValue(expression.values(), EnumExpressionCondition.LESS_THAN)[0]);
-        if(expression.condition() == EnumExpressionCondition.LESS_OR_EQUAL)
-            return EXPRESSION.isLessThanOrEqualTo(parseSingleNumberValue(expression.values(), EnumExpressionCondition.LESS_OR_EQUAL)[0]);
-
-        /* Equal / Not Equal */
-        if(expression.condition() == EnumExpressionCondition.EQUAL)
-            return EXPRESSION.isEqualTo(expression.values()[0]);
-        if(expression.condition() == EnumExpressionCondition.NOT_EQUAL)
-            return EXPRESSION.isNotEqualTo(expression.values()[0]);
-
-        /* Other */
-        if(expression.condition() == EnumExpressionCondition.IN)
-            return EXPRESSION.in((Object[])expression.values());
-
-        if(expression.condition() == EnumExpressionCondition.LIKE)
-            return EXPRESSION.like(expression.values()[0]);
-
-        if(expression.condition() == EnumExpressionCondition.BETWEEN) {
-            final Number[] VALUES = parseSingleNumberValue(expression.values(), EnumExpressionCondition.BETWEEN);
-            return EXPRESSION.between(VALUES[0], VALUES[1]);
-        }
-
-       throw new IllegalArgumentException("Unsupported expression condition: " + expression.condition());
-    }
-
-    private final static Number[] parseSingleNumberValue(String[] values, EnumExpressionCondition condition) {
-        if (values.length != 1) throw new IllegalArgumentException(condition + " condition requires exactly 1 value");
-        try {
-            final Number[] PARSED_VALUES = new Number[1];
-            for (int i = 0; i < values.length; i++) {
-                final String VALUE = values[i];
-                if (VALUE.contains(".")) PARSED_VALUES[i] = Double.parseDouble(VALUE);
-                else PARSED_VALUES[i] = Long.parseLong(VALUE);
-            }
-            return PARSED_VALUES;
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException(condition + " condition value must be a valid number");
-        }
     }
 
     public final static Expression of(String column) {

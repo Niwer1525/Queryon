@@ -5,12 +5,12 @@ import java.util.List;
 
 import niwer.queryon.DataBase;
 import niwer.queryon.QueryonEngine;
-import niwer.queryon.queries.InteractionManager;
+import niwer.queryon.queries.QueryManager;
 import niwer.queryon.tables.Table;
 
 /**
  * Manager for building and executing INSERT queries with a fluent API.
- * Supports single and multi-row inserts, inserting from SELECT, UPSERT (ON CONFLICT), and RETURNING clauses.
+ * Supports single and multi-row inserts, inserting from SELECT and UPSERT (ON CONFLICT) clauses.
  * 
  * @author Niwer
  * 
@@ -76,7 +76,7 @@ public class InsertionManager extends QueryExecutor {
      * @param values An array of value arrays, where each inner array represents a row of values in the same order as the specified columns
      * @return The InsertionManager instance for chaining
      */
-    public final InsertionManager values(Object[]... values) {
+    public final InsertionManager rows(Object[]... values) {
         for (final Object[] VALUE : values) ROWS.add(VALUE);
         return this;
     }
@@ -93,7 +93,7 @@ public class InsertionManager extends QueryExecutor {
             .reduce((a, b) -> a + ", " + b)
             .orElseThrow(() -> new IllegalStateException("Failed to build insertion query: No rows to insert."));
 
-        QUERY.append(VALUES_SQL).append(";");
+        QUERY.append(VALUES_SQL);
         
         return QUERY.toString();
     }
@@ -102,7 +102,7 @@ public class InsertionManager extends QueryExecutor {
      * Executes the built insertion query against the database.
      */
     public final void execute() {
-        InteractionManager.query(this.DATA_BASE, this.buildQuery());
+        QueryManager.query(this.DATA_BASE, this.buildQuery());
     }
 
     public static final Object[] of(Object... values) { return values; }
