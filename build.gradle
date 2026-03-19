@@ -1,8 +1,14 @@
 plugins {
     id 'java'
     id 'java-library'
+     id 'maven-publish'
     id 'com.gradleup.shadow' version '9.3.2'
 }
+
+group = 'niwer.queryon'
+def releaseVersion = findProperty('releaseVersion') ?: '1.0.0'
+version = releaseVersion
+def publishedArtifactId = 'queryon-sqlite'
 
 repositories {
     // Use Maven Central for resolving dependencies.
@@ -23,7 +29,7 @@ dependencies {
 
     // shadow("com.google.code.gson:gson:${project.gson_version}")
     shadow("org.xerial:sqlite-jdbc:${project.sqlite_jdbc_version}")
-    // shadow("com.github.Niwer1525:Lumen:${project.lumen_version}")
+    shadow("com.github.Niwer1525:Lumen:${project.lumen_version}")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
@@ -33,16 +39,41 @@ java {
     }
 }
 
-tasks.named('test') {
-    // Use JUnit Platform for unit tests.
-    useJUnitPlatform()
+tasks.named('jar') {
+    archiveBaseName = publishedArtifactId
 }
 
 /* Add all dependcies to the jar */
 shadowJar {
 	minimize()
-   	// configurations = [project.configurations.shadow]
+   	configurations = [project.configurations.shadow]
+    archiveBaseName.set(publishedArtifactId)
+	archiveClassifier.set('')
 	// commonExclusions.each { exclude it } // Exclude unnecessary files
-	// archiveFileName = "network.jar"
-	// archiveClassifier.set('')
+}
+
+publishing {
+    publications {
+        gpr(MavenPublication) {
+            groupId = 'niwer.queryon'
+            artifactId = publishedArtifactId
+            version = project.version
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = "https://maven.pkg.github.com/Niwer1525/Lumen"
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+}
+
+tasks.named('test') {
+    // Use JUnit Platform for unit tests.
+    useJUnitPlatform()
 }
