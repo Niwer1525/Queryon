@@ -91,4 +91,9 @@ public class QueryonEngineTest {
         assertTrue(QueryonEngine.isExpression("date + INTERVAL 1 DAY"));
         assertTrue(QueryonEngine.isExpression("name || ' ' || surname"));
     }
+
+    @Test void testEscapeString() {
+        final String TABLE_NAME = "users";
+        assertEquals("\"users\"", QueryonEngine.escapeString(TABLE_NAME));
+    }
 }

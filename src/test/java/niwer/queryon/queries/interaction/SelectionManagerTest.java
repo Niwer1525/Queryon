@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import niwer.queryon.DataBase;
+import niwer.queryon.QueryonEngine;
 import niwer.queryon.QueryonEngineTest;
 import niwer.queryon.TestUserTable;
 import niwer.queryon.TestUserTable.TestUser;
@@ -22,31 +23,32 @@ class SelectionManagerTest {
 
     @Test void testSelectionManagerSQL(@TempDir File tempDir) {
         final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
+        final String ESCAPED_TABLE_NAME = QueryonEngine.escapeString("test_table");
 
         final String SELECT_ALL = SelectionManager.select(DB, TestUserTable.class)
             .buildQuery();
-        assertEquals("SELECT * FROM 'test_table'", SELECT_ALL);
+        assertEquals("SELECT * FROM " + ESCAPED_TABLE_NAME, SELECT_ALL);
 
         final String SELECT_DISTINCT = SelectionManager.selectDistinct(DB, TestUserTable.class)
             .buildQuery();
-        assertEquals("SELECT DISTINCT * FROM 'test_table'", SELECT_DISTINCT);
+        assertEquals("SELECT DISTINCT * FROM " + ESCAPED_TABLE_NAME, SELECT_DISTINCT);
 
         final String SELECT_COLUMNS = SelectionManager.select(DB, TestUserTable.class, "id", "name")
             .buildQuery();
-        assertEquals("SELECT id, name FROM 'test_table'", SELECT_COLUMNS);
+        assertEquals("SELECT id, name FROM " + ESCAPED_TABLE_NAME, SELECT_COLUMNS);
 
         final String SELECT_COLUMNS_WHERE = SelectionManager.select(DB, TestUserTable.class, "id", "name")
             .where(Expression.of("age").isGreaterThan(25))
             .limit(25)
             .buildQuery();
-        assertEquals("SELECT id, name FROM 'test_table' WHERE age > 25 LIMIT 25", SELECT_COLUMNS_WHERE);
+        assertEquals("SELECT id, name FROM " + ESCAPED_TABLE_NAME + " WHERE age > 25 LIMIT 25", SELECT_COLUMNS_WHERE);
 
         final String SELECT_COLUMNS_ORDER_BY = SelectionManager.select(DB, TestUserTable.class, "id", "name")
             .orderBy("id", EnumOrder.ASC)
             .orderBy("email", EnumOrder.ASC)
             .orderBy("name", EnumOrder.DESC)
             .buildQuery();
-        assertEquals("SELECT id, name FROM 'test_table' ORDER BY id ASC, email ASC, name DESC", SELECT_COLUMNS_ORDER_BY);
+        assertEquals("SELECT id, name FROM " + ESCAPED_TABLE_NAME + " ORDER BY id ASC, email ASC, name DESC", SELECT_COLUMNS_ORDER_BY);
 
         final String SELECT_COLUMNS_ORDER_BY_WHERE = SelectionManager.select(DB, TestUserTable.class, "id", "name")
             .where(Expression.of("age").isGreaterThan(25))
@@ -54,7 +56,7 @@ class SelectionManagerTest {
             .orderBy("email", EnumOrder.ASC)
             .orderBy("name", EnumOrder.DESC)
             .buildQuery();
-        assertEquals("SELECT id, name FROM 'test_table' WHERE age > 25 ORDER BY id ASC, email ASC, name DESC", SELECT_COLUMNS_ORDER_BY_WHERE);
+        assertEquals("SELECT id, name FROM " + ESCAPED_TABLE_NAME + " WHERE age > 25 ORDER BY id ASC, email ASC, name DESC", SELECT_COLUMNS_ORDER_BY_WHERE);
     }
 
     @Test void testSelectionInvalidValues(@TempDir File tempDir) {

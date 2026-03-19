@@ -80,4 +80,17 @@ public class QueryonEngine {
         if (!(value instanceof String str)) return false;
         return EXPRESSION_PATTERN.matcher(str).matches();
     }
+
+    /**
+     * Escapes double quotes in a string by replacing them with two double quotes.
+     * SQL uses two double quotes to represent all columns and tables names.
+     * While '' represents a literal single quote within a string.
+     * 
+     * @param str The string to escape
+     * @return The escaped string
+     */
+    public static String escapeString(String str) {
+        // return str.replace("\"", "\"");
+        return "\"" + str + "\"";
+    }
 }

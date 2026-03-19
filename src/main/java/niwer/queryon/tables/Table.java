@@ -36,7 +36,7 @@ public abstract class Table {
     public abstract String name();
 
     public final String escapedName() {
-        return "'" + this.name() + "'";
+        return QueryonEngine.escapeString(this.name());
     }
     
     public final Set<Column> columns() { return Set.copyOf(COLUMNS); }

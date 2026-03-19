@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import niwer.queryon.DataBase;
+import niwer.queryon.QueryonEngine;
 import niwer.queryon.QueryonEngineTest;
 import niwer.queryon.TestUserTable;
 import niwer.queryon.TestUserTable.TestUser;
@@ -19,24 +20,25 @@ class InsertionManagerTest {
 
     @Test void testInsertionManagerSQL(@TempDir File tempDir) {
         final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
+        final String ESCAPED_TABLE_NAME = QueryonEngine.escapeString("test_table");
 
         final String INSERT = InsertionManager.insert(DB, TestUserTable.class, "id", "name", "age")
             .row(1, "Alice", 30)
             .rows(InsertionManager.of(2, "Bob", 25), InsertionManager.of(3, "Carol", 28))
             .buildQuery();
-        assertEquals("INSERT INTO 'test_table' (id, name, age) VALUES (1, 'Alice', 30), (2, 'Bob', 25), (3, 'Carol', 28)", INSERT);
+        assertEquals("INSERT INTO " + ESCAPED_TABLE_NAME + " (id, name, age) VALUES (1, 'Alice', 30), (2, 'Bob', 25), (3, 'Carol', 28)", INSERT);
 
         final String INSERT_OR_IGNORE = InsertionManager.insertOrIgnore(DB, TestUserTable.class, "id", "name", "age")
             .row(1, "Alice", 30)
             .rows(InsertionManager.of(2, "Bob", 25), InsertionManager.of(3, "Carol", 28))
             .buildQuery();
-        assertEquals("INSERT OR IGNORE INTO 'test_table' (id, name, age) VALUES (1, 'Alice', 30), (2, 'Bob', 25), (3, 'Carol', 28)", INSERT_OR_IGNORE);
+        assertEquals("INSERT OR IGNORE INTO " + ESCAPED_TABLE_NAME + " (id, name, age) VALUES (1, 'Alice', 30), (2, 'Bob', 25), (3, 'Carol', 28)", INSERT_OR_IGNORE);
 
         final String INSERT_DO_NOTHING = InsertionManager.insertOrIgnore(DB, TestUserTable.class, "id", "name", "age")
             .row(1, "Alice", 30)
             .onConflictDoNothing()
             .buildQuery();
-        assertEquals("INSERT OR IGNORE INTO 'test_table' (id, name, age) VALUES (1, 'Alice', 30) ON CONFLICT DO NOTHING", INSERT_DO_NOTHING);
+        assertEquals("INSERT OR IGNORE INTO " + ESCAPED_TABLE_NAME + " (id, name, age) VALUES (1, 'Alice', 30) ON CONFLICT DO NOTHING", INSERT_DO_NOTHING);
 
         final String INSERT_DO_UPDATE = InsertionManager.insertOrIgnore(DB, TestUserTable.class, "id", "name", "age")
             .row(1, "Alice", 30)
@@ -44,7 +46,7 @@ class InsertionManagerTest {
                 UpdateManager.update(DB, TestUserTable.class).set("name", "Alice Updated").where(Expression.of("id").isEqualTo(1))
             )
             .buildQuery();
-        assertEquals("INSERT OR IGNORE INTO 'test_table' (id, name, age) VALUES (1, 'Alice', 30) ON CONFLICT DO UPDATE SET name = 'Alice Updated' WHERE id = 1", INSERT_DO_UPDATE);
+        assertEquals("INSERT OR IGNORE INTO " + ESCAPED_TABLE_NAME + " (id, name, age) VALUES (1, 'Alice', 30) ON CONFLICT DO UPDATE SET name = 'Alice Updated' WHERE id = 1", INSERT_DO_UPDATE);
     }
 
     @Test void testInsertionInvalidValues(@TempDir File tempDir) {
