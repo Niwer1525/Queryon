@@ -1,0 +1,36 @@
+name: Feature Request
+title: "[Feature Request]: "
+labels: ["enhancement"]
+type: enhancement
+body:
+  - type: textarea
+    id: what-do-you-want
+    attributes:
+      label: What do you want?
+      description: Tell us what you want and how it should work. Please be as detailed as possible.
+      placeholder: Tell us what you want!
+    validations:
+      required: true
+  - type: textarea
+    id: why-is-this-useful
+    attributes:
+      label: Why is this useful?
+      description: Tell us why this feature would be useful to you and how it would improve your experience. Please be as detailed as possible.
+      placeholder: Tell us why this would be useful!
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives-considered
+    attributes:
+      label: Alternatives considered
+      description: Tell us about any alternative solutions or features you've considered. This will help us understand your needs better. Please be as detailed as possible.
+      placeholder: Tell us about any alternatives you've considered!
+    validations:
+      required: false
+  - type: upload
+    id: screenshots
+    attributes:
+      label: Upload screenshots
+      description: If applicable, add screenshots to help explain your feature request.
+    validations:
+      required: false
