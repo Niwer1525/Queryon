@@ -19,4 +19,8 @@ public abstract class QueryExecutor {
     }
     
     protected abstract String buildQuery();
+
+    protected final String columnPrefix(String column) {
+        return TABLE.name() + "." + column;
+    }
 }

@@ -33,20 +33,20 @@ class SelectionManagerTest {
 
         final String SELECT_COLUMNS = SelectionManager.select(DB, TestUserTable.class, "id", "name")
             .buildQuery();
-        assertEquals("SELECT id, name FROM test_table", SELECT_COLUMNS);
+        assertEquals("SELECT test_table.id, test_table.name FROM test_table", SELECT_COLUMNS);
 
         final String SELECT_COLUMNS_WHERE = SelectionManager.select(DB, TestUserTable.class, "id", "name")
             .where(Expression.of("age").isGreaterThan(25))
             .limit(25)
             .buildQuery();
-        assertEquals("SELECT id, name FROM test_table WHERE age > 25 LIMIT 25", SELECT_COLUMNS_WHERE);
+        assertEquals("SELECT test_table.id, test_table.name FROM test_table WHERE age > 25 LIMIT 25", SELECT_COLUMNS_WHERE);
 
         final String SELECT_COLUMNS_ORDER_BY = SelectionManager.select(DB, TestUserTable.class, "id", "name")
             .orderBy("id", EnumOrder.ASC)
             .orderBy("email", EnumOrder.ASC)
             .orderBy("name", EnumOrder.DESC)
             .buildQuery();
-        assertEquals("SELECT id, name FROM test_table ORDER BY id ASC, email ASC, name DESC", SELECT_COLUMNS_ORDER_BY);
+        assertEquals("SELECT test_table.id, test_table.name FROM test_table ORDER BY test_table.id ASC, test_table.email ASC, test_table.name DESC", SELECT_COLUMNS_ORDER_BY);
 
         final String SELECT_COLUMNS_ORDER_BY_WHERE = SelectionManager.select(DB, TestUserTable.class, "id", "name")
             .where(Expression.of("age").isGreaterThan(25))
@@ -54,7 +54,7 @@ class SelectionManagerTest {
             .orderBy("email", EnumOrder.ASC)
             .orderBy("name", EnumOrder.DESC)
             .buildQuery();
-        assertEquals("SELECT id, name FROM test_table WHERE age > 25 ORDER BY id ASC, email ASC, name DESC", SELECT_COLUMNS_ORDER_BY_WHERE);
+        assertEquals("SELECT test_table.id, test_table.name FROM test_table WHERE age > 25 ORDER BY test_table.id ASC, test_table.email ASC, test_table.name DESC", SELECT_COLUMNS_ORDER_BY_WHERE);
     }
 
     @Test void testSelectionInvalidValues(@TempDir File tempDir) {

@@ -1,5 +1,6 @@
 package niwer.queryon.queries.interaction;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +28,10 @@ public class SelectionManager extends QueryExecutor {
     private SelectionManager(DataBase db, Class<? extends Table> table, boolean isDistinct, String... columns) {
         super(db, table);
         this.IS_DISTINCT = isDistinct;
-        this.COLUMNS = columns;
+        this.COLUMNS = Arrays.stream(columns).map(column -> {
+            if (column.equals("*")) return "*";
+            return columnPrefix(column);
+        }).toArray(String[]::new);
     }
 
     /**
@@ -80,7 +84,7 @@ public class SelectionManager extends QueryExecutor {
      * @return The SelectionManager instance for chaining
      */
     public final SelectionManager orderBy(String column, EnumOrder order) {
-        this.ORDER_BY.put(column, order);
+        this.ORDER_BY.put(columnPrefix(column), order);
         return this;
     }
 
@@ -102,7 +106,7 @@ public class SelectionManager extends QueryExecutor {
         QUERY.append(QueryonEngine.formatValues(COLUMNS)).append(" FROM ").append(TABLE.name());
 
         /* Add where */
-        if (whereCondition != null) QUERY.append(" WHERE ").append(whereCondition.toString());
+        if (this.whereCondition != null) QUERY.append(" WHERE ").append(this.whereCondition.toString());
 
         /* Add order by */
         if (!ORDER_BY.isEmpty()) {

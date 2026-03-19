@@ -35,7 +35,7 @@ public class DeletionManager extends QueryExecutor {
         final StringBuilder QUERY = new StringBuilder("DELETE FROM ").append(TABLE.name());
 
         /* Add WHERE condition */
-        if (this.whereCondition != null) QUERY.append(" WHERE ").append(this.whereCondition);
+        if (this.whereCondition != null) QUERY.append(" WHERE ").append(this.whereCondition.toString());
 
         return QUERY.toString();
     }

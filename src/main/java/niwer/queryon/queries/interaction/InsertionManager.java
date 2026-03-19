@@ -1,6 +1,7 @@
 package niwer.queryon.queries.interaction;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import niwer.queryon.DataBase;
@@ -24,7 +25,7 @@ public class InsertionManager extends QueryExecutor {
 
     private InsertionManager(DataBase db, Class<? extends Table> table, boolean ignore, String... columns) {
         super(db, table);
-        this.COLUMNS = columns;
+        this.COLUMNS = Arrays.stream(columns).map(column -> columnPrefix(column)).toArray(String[]::new);
         this.IGNORE_CONFLICTS = ignore;
     }
 
