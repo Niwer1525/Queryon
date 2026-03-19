@@ -5,13 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.File;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 import niwer.queryon.DataBase;
+import niwer.queryon.QueryonEngineTest;
 import niwer.queryon.TestUserTable;
 import niwer.queryon.TestUserTable.TestUser;
 import niwer.queryon.queries.Expression;
@@ -19,16 +18,8 @@ import niwer.queryon.queries.interaction.SelectionManager.EnumOrder;
 
 class SelectionManagerTest {
 
-    @TempDir
-    private static File tempDir;
-
-    private static DataBase setupDataBase(String name) {
-        final DataBase DB = new DataBase(new File(tempDir, name +".db")).registerTable(TestUserTable.class);
-        return DB;
-    }
-
     @Test void testSelectionManagerSQL() {
-        final DataBase DB = setupDataBase("testSelection");
+        final DataBase DB = QueryonEngineTest.setupUsersDB("testSelection");
 
         final String SELECT_ALL = SelectionManager.select(DB, TestUserTable.class)
             .buildQuery();
@@ -65,7 +56,7 @@ class SelectionManagerTest {
     }
 
     @Test void testSelectionInvalidValues() {
-        final DataBase DB = setupDataBase("testSelection");
+        final DataBase DB = QueryonEngineTest.setupUsersDB("testSelection");
 
        assertThrows(IllegalArgumentException.class, () -> SelectionManager.select(null, TestUserTable.class));
        assertThrows(IllegalArgumentException.class, () -> SelectionManager.select(DB, null));
@@ -81,7 +72,7 @@ class SelectionManagerTest {
     }
 
     @Test void testSelectionManager() {
-        final DataBase DB = setupDataBase("testSelection");
+        final DataBase DB = QueryonEngineTest.setupUsersDB("testSelection");
         
         InsertionManager.insert(DB, TestUserTable.class, "id", "name", "age")
             .rows(InsertionManager.of(1, "Alice", 30), InsertionManager.of(2, "Bob", 25), InsertionManager.of(3, "Carol", 28))

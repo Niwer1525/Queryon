@@ -3,27 +3,17 @@ package niwer.queryon.queries.interaction;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.File;
-
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 import niwer.queryon.DataBase;
+import niwer.queryon.QueryonEngineTest;
 import niwer.queryon.TestUserTable;
 import niwer.queryon.queries.Expression;
 
 class DeletionManagerTest {
 
-    @TempDir
-    private static File tempDir;
-
-    private static DataBase setupDataBase(String name) {
-        final DataBase DB = new DataBase(new File(tempDir, name +".db")).registerTable(TestUserTable.class);
-        return DB;
-    }
-
     @Test void testDeletionManager() {
-        final DataBase DB = setupDataBase("testSelection");
+        final DataBase DB = QueryonEngineTest.setupUsersDB("testSelection");
 
         final String DELETE = DeletionManager.delete(DB, TestUserTable.class)
             .buildQuery();
@@ -36,7 +26,7 @@ class DeletionManagerTest {
     }
 
     @Test void testExecute() {
-        final DataBase DB = setupDataBase("testSelection");
+        final DataBase DB = QueryonEngineTest.setupUsersDB("testSelection");
 
         assertDoesNotThrow(() -> {
             DeletionManager.delete(DB, TestUserTable.class)

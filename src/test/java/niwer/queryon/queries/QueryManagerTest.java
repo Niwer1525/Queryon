@@ -5,26 +5,15 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.io.File;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 import niwer.queryon.DataBase;
-import niwer.queryon.TestUserTable;
+import niwer.queryon.QueryonEngineTest;
 import niwer.queryon.TestUserTable.TestUser;
 
 class QueryManagerTest {
-
-    @TempDir
-    private static File tempDir;
-
-    private static DataBase setupDataBase(String name) {
-        final DataBase DB = new DataBase(new File(tempDir, name +".db")).registerTable(TestUserTable.class);
-        return DB;
-    }
-
     public static void addUsers(DataBase DB) {
         QueryManager.query(DB, """
             INSERT INTO test_table (id, name, age) VALUES (?, ?, ?)
@@ -44,7 +33,7 @@ class QueryManagerTest {
     }
 
     @Test void testNullParameters() {
-        final DataBase DB = setupDataBase("null_parameters");
+        final DataBase DB = QueryonEngineTest.setupUsersDB("null_parameters");
         final Object[] EMPTY_PARAMS = new Object[]{};
         assertThrows(IllegalArgumentException.class, () -> QueryManager.query(null, null, "SELECT * FROM test_table", EMPTY_PARAMS));
         assertThrows(IllegalArgumentException.class, () -> QueryManager.query(DB, null, null, EMPTY_PARAMS));
@@ -52,7 +41,7 @@ class QueryManagerTest {
     }
 
     @Test void testNoResultQueryNullParameters() {
-        final DataBase DB = setupDataBase("no_result_null_parameters");
+        final DataBase DB = QueryonEngineTest.setupUsersDB("no_result_null_parameters");
         assertThrows(IllegalArgumentException.class, () -> QueryManager.query(null, "INSERT INTO test_table (id, name, age) VALUES (?, ?, ?)", 1, "Alice", 30));
         assertThrows(IllegalArgumentException.class, () -> QueryManager.query(DB, (String)null, "INSERT INTO test_table (id, name, age) VALUES (?, ?, ?)", 1, "Alice", 30));
         assertThrows(IllegalArgumentException.class, () -> QueryManager.query(DB, "", "", 1, "Alice", 30));
@@ -60,7 +49,7 @@ class QueryManagerTest {
 
     @Test void testNoResultQuery() {
         assertDoesNotThrow(() -> {
-            final DataBase DB = setupDataBase("no_result");
+            final DataBase DB = QueryonEngineTest.setupUsersDB("no_result");
             QueryManager.query(DB, """
                 INSERT INTO test_table (id, name, age) VALUES (?, ?, ?)
             """, 0, "Vanessa", 35);
@@ -68,7 +57,7 @@ class QueryManagerTest {
     }
 
     @Test void testSingleResultSerializableQuery() {
-        final DataBase DB = setupDataBase("single_result_serializable");
+        final DataBase DB = QueryonEngineTest.setupUsersDB("single_result_serializable");
         addUsers(DB);
 
         final Object RESULT = QueryManager.querySerializable(DB, TestUser.class, """
@@ -79,7 +68,7 @@ class QueryManagerTest {
     }
 
     @Test void testSingleResultQuery() {
-        final DataBase DB = setupDataBase("single_result");
+        final DataBase DB = QueryonEngineTest.setupUsersDB("single_result");
         addUsers(DB);
 
         final Object RESULT = QueryManager.query(DB, TestUser.class, """
@@ -90,7 +79,7 @@ class QueryManagerTest {
     }
 
     @Test void testMultipleResultQuery() {
-        final DataBase DB = setupDataBase("multiple_result");
+        final DataBase DB = QueryonEngineTest.setupUsersDB("multiple_result");
         addUsers(DB);
 
         final Object RESULT = QueryManager.queryList(DB, TestUser.class, """
@@ -101,7 +90,7 @@ class QueryManagerTest {
     }
 
     @Test void testSingleResultQueryList() {
-        final DataBase DB = setupDataBase("single_result_query_list");
+        final DataBase DB = QueryonEngineTest.setupUsersDB("single_result_query_list");
         addUsers(DB);
 
         assertThrows(IllegalStateException.class, () -> {
@@ -112,7 +101,7 @@ class QueryManagerTest {
     }
 
     @Test void testExecuteSQLCommandForPrimitive() {
-        final DataBase DB = setupDataBase("primitive_result");
+        final DataBase DB = QueryonEngineTest.setupUsersDB("primitive_result");
         addUsers(DB);
 
         final Object RESULT = QueryManager.queryPrimitive(DB, Integer.class, """
@@ -123,7 +112,7 @@ class QueryManagerTest {
     }
 
     @Test void testQueryPrimitiveWithNoResult() {
-        final DataBase DB = setupDataBase("primitive_no_result");
+        final DataBase DB = QueryonEngineTest.setupUsersDB("primitive_no_result");
         addUsers(DB);
 
         final Object RESULT = QueryManager.queryPrimitive(DB, Integer.class, """
@@ -135,7 +124,7 @@ class QueryManagerTest {
     }
 
     @Test void testPrimitiveFunctions() {
-        final DataBase DB = setupDataBase("primitive_functions");
+        final DataBase DB = QueryonEngineTest.setupUsersDB("primitive_functions");
         addUsers(DB);
 
         final Object COUNT_RESULT = QueryManager.queryInt(DB, """

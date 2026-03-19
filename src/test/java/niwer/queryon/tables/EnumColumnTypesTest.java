@@ -9,6 +9,7 @@ import java.lang.reflect.Field;
 
 import org.junit.jupiter.api.Test;
 
+import niwer.queryon.QueryonEngineTest;
 import niwer.queryon.tables.api.IColumnField;
 
 class EnumColumnTypesTest {
@@ -22,7 +23,7 @@ class EnumColumnTypesTest {
     }
 
     @Test void testFromJavaWithSupportedTypes() {
-        assertEquals(EnumColumnTypes.ENUM, EnumColumnTypes.fromJava(TestEnum.class));
+        assertEquals(EnumColumnTypes.ENUM, EnumColumnTypes.fromJava(QueryonEngineTest.TestEnum.class));
 
         assertEquals(EnumColumnTypes.TEXT, EnumColumnTypes.fromJava(String.class));
         try {
@@ -67,8 +68,6 @@ class EnumColumnTypesTest {
             assertEquals("Unsupported Java type: class java.lang.Object", EX.getMessage());
         }
     }
-
-    private enum TestEnum { VALUE1, VALUE2 }
 
     private static class VarCharTestClass {
         @IColumnField(charLimit = 255)

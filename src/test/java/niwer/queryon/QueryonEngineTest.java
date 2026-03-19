@@ -8,22 +8,44 @@ import java.util.Date;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-class QueryonEngineTest {
+public class QueryonEngineTest {
 
     @TempDir
     private static File tempDir;
 
+    /**
+     * Sets up an empty database with the specified name and registers the TestUserTable.
+     * 
+     * @param name the name of the database
+     * @return the initialized DataBase instance
+     */
     public static DataBase setupEmptyDB(String name) {
         final DataBase DB = new DataBase(new File(tempDir, name +".db")).registerTable(TestUserTable.class);
         return DB;
     }
 
+    /**
+     * Sets up a database with the specified name and registers the TestUserTable.
+     * 
+     * @param name the name of the database
+     * @return the initialized DataBase instance with the TestUserTable registered
+     */
     public static DataBase setupUsersDB(String name) {
         return setupEmptyDB(name).registerTable(TestUserTable.class);
     }
 
+    /**
+     * Sets up a database with the specified name and registers both the TestUserTable and TestFoodTable.
+     * 
+     * @param name the name of the database
+     * @return the initialized DataBase instance with both the TestUserTable and TestFoodTable registered
+     */
     public static DataBase setupUsersAndFoodDB(String name) {
         return setupEmptyDB(name).registerTable(TestUserTable.class).registerTable(TestFoodTable.class);
+    }
+
+    public static enum TestEnum {
+        VALUE1, VALUE2, VALUE3
     }
 
     @Test void testInstances() {

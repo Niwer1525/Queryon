@@ -3,28 +3,19 @@ package niwer.queryon.queries.interaction;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.io.File;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 import niwer.queryon.DataBase;
+import niwer.queryon.QueryonEngineTest;
 import niwer.queryon.TestUserTable;
 import niwer.queryon.TestUserTable.TestUser;
 
 class InsertionManagerTest {
 
-    @TempDir
-    private static File tempDir;
-
-    private static DataBase setupDataBase(String name) {
-        final DataBase DB = new DataBase(new File(tempDir, name +".db")).registerTable(TestUserTable.class);
-        return DB;
-    }
-
     @Test void testInsertionManagerSQL() {
-        final DataBase DB = setupDataBase("testInsertion");
+        final DataBase DB = QueryonEngineTest.setupUsersDB("testInsertion");
 
         final String INSERT = InsertionManager.insert(DB, TestUserTable.class, "id", "name", "age")
             .row(1, "Alice", 30)
@@ -40,7 +31,7 @@ class InsertionManagerTest {
     }
 
     @Test void testInsertionInvalidValues() {
-        final DataBase DB = setupDataBase("testInsertion");
+        final DataBase DB = QueryonEngineTest.setupUsersDB("testInsertion");
 
         assertThrows(IllegalArgumentException.class, () -> InsertionManager.insert(null, TestUserTable.class, "id", "name", "age"));
         assertThrows(IllegalArgumentException.class, () -> InsertionManager.insert(DB, null, "id", "name", "age"));
@@ -54,7 +45,7 @@ class InsertionManagerTest {
     }
 
     @Test void testInsertionManager() {
-        final DataBase DB = setupDataBase("testInsertion");
+        final DataBase DB = QueryonEngineTest.setupUsersDB("testInsertion");
 
         InsertionManager.insert(DB, TestUserTable.class, "id", "name", "age")
             .row(1, "Alice", 30)
