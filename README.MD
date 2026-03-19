@@ -19,6 +19,43 @@ The objective of this project is to provide a simple and intuitive API to build 
 - Select COUNT, SUM, AVG, MIN, MAX and other aggregate functions
 
 ## How to install
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/Niwer1525/Queryon?label=latest%20version&color=orange)
+Or [📥Download the jar](https://github.com/Niwer1525/Queryon/releases/latest/download/queryon-sqlite.jar)
+
+View on JitPack : https://jitpack.io/#Niwer1525/Queryon
+
+Gradle:
+```groovy
+repositories {
+    mavenCentral();
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    implementation 'com.github.Niwer1525:Queryon:1.0.0'
+}
+```
+Maven:
+```xml
+<repositories>
+    <repository>
+        <id>maven-central</id>
+        <url>https://repo.maven.apache.org/maven2/</url>
+    </repository>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+<dependencies>
+    <dependency>
+        <groupId>com.github.Niwer1525</groupId>
+        <artifactId>Queryon</artifactId>
+        <version>1.0.0</version>
+    </dependency>
+</dependencies>
+```
+
 
 ## How to use
 
