@@ -3,12 +3,15 @@ package niwer.queryon;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.TimeZone;
 import java.util.regex.Pattern;
 
 import niwer.lumen.LumenEngine;
 import niwer.lumen.container.Container;
 
 public class QueryonEngine {
+
+    private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
 
     public static final Container LOGGER = LumenEngine.registerContainer("QUERYON");
         private static final Pattern EXPRESSION_PATTERN = Pattern.compile(
@@ -24,6 +27,7 @@ public class QueryonEngine {
      */
     public static String dateToSQL(Date date) {
         final SimpleDateFormat FORMATTER = new SimpleDateFormat("yyyy-MM-dd");
+        FORMATTER.setTimeZone(UTC);
         return FORMATTER.format(date);
     }
 
@@ -36,6 +40,7 @@ public class QueryonEngine {
      */
     public static String dateTimeToSQL(Date date) {
         final SimpleDateFormat FORMATTER = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        FORMATTER.setTimeZone(UTC);
         return FORMATTER.format(date);
     }
 

@@ -64,7 +64,7 @@ public class QueryonEngineTest {
     @Test void testDateTimeToSQL() {
         final Date DATE = new Date(0); // January 1, 1970
         final String SQL_DATE_TIME = QueryonEngine.dateTimeToSQL(DATE);
-        assertEquals("1970-01-01 01:00:00", SQL_DATE_TIME);
+        assertEquals("1970-01-01 00:00:00", SQL_DATE_TIME);
     }
 
     @Test void testFormatValues() {
@@ -75,7 +75,7 @@ public class QueryonEngineTest {
         assertEquals("'Bob', 20, true", FORMATTED_ESCAPED);
 
         final String FORMATTED_DATE_ESCAPED = QueryonEngine.formatValues(true, "Bob", new Date(0), true);
-        assertEquals("'Bob', '1970-01-01 01:00:00', true", FORMATTED_DATE_ESCAPED);
+        assertEquals("'Bob', '1970-01-01 00:00:00', true", FORMATTED_DATE_ESCAPED);
     }
 
     @Test void testIsExpression() {
