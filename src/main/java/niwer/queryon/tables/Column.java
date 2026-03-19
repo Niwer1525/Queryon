@@ -222,7 +222,7 @@ public class Column {
 
     protected final String constraintSQL() {
         if (foreignKeyReferenceTable == null || foreignKeyReferenceColumn == null) return null;
-        return String.format("FOREIGN KEY (%s) REFERENCES %s(%s)%s", NAME, foreignKeyReferenceTable.name(), foreignKeyReferenceColumn, " ON DELETE " + foreignKeyDeleteAction);
+        return String.format("FOREIGN KEY (%s) REFERENCES %s(%s)%s", NAME, foreignKeyReferenceTable.escapedName(), foreignKeyReferenceColumn, " ON DELETE " + foreignKeyDeleteAction);
     }
 
     @Override public int hashCode() { return NAME.hashCode(); }

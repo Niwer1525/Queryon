@@ -27,27 +27,27 @@ class UpdateManagerTest {
             .set("name", "Alice")
             .set("age", 30)
             .buildQuery();
-        assertEquals("UPDATE test_table SET name = 'Alice', age = 30", UPDATE);
+        assertEquals("UPDATE 'test_table' SET name = 'Alice', age = 30", UPDATE);
 
         final String UPDATE_NULL = UpdateManager.update(DB, TestUserTable.class)
             .set("name", "Alice")
             .set("age", null)
             .buildQuery();
-        assertEquals("UPDATE test_table SET name = 'Alice', age = NULL", UPDATE_NULL);
+        assertEquals("UPDATE 'test_table' SET name = 'Alice', age = NULL", UPDATE_NULL);
 
         final String UPDATE_WHERE = UpdateManager.update(DB, TestUserTable.class)
             .set("name", "Alice")
             .set("age", 30)
             .where(Expression.of("id").isEqualTo(1))
             .buildQuery();
-        assertEquals("UPDATE test_table SET name = 'Alice', age = 30 WHERE id = 1", UPDATE_WHERE);
+        assertEquals("UPDATE 'test_table' SET name = 'Alice', age = 30 WHERE id = 1", UPDATE_WHERE);
 
         final String UPDATE_WHERE_AND_SET_EXPRESSION = UpdateManager.update(DB, TestUserTable.class)
             .set("name", "Alice")
             .set("age", "age + 5 * 2.5")
             .where(Expression.of("id").isEqualTo(1))
             .buildQuery();
-        assertEquals("UPDATE test_table SET name = 'Alice', age = age + 5 * 2.5 WHERE id = 1", UPDATE_WHERE_AND_SET_EXPRESSION);
+        assertEquals("UPDATE 'test_table' SET name = 'Alice', age = age + 5 * 2.5 WHERE id = 1", UPDATE_WHERE_AND_SET_EXPRESSION);
 
         final SelectionManager SELECT_DISTINCT = SelectionManager.selectDistinct(DB, TestUserTable.class)
             .where(Expression.of("age").isGreaterThan(25));
@@ -56,7 +56,7 @@ class UpdateManagerTest {
             .set("age", SELECT_DISTINCT)
             .where(Expression.of("id").isEqualTo(1))
             .buildQuery();
-        assertEquals("UPDATE test_table SET name = 'Alice', age = (SELECT DISTINCT * FROM test_table WHERE age > 25) WHERE id = 1", UPDATE_SUBQUERY);
+        assertEquals("UPDATE 'test_table' SET name = 'Alice', age = (SELECT DISTINCT * FROM 'test_table' WHERE age > 25) WHERE id = 1", UPDATE_SUBQUERY);
     }
 
     @Test void testUpdateInvalidValues(@TempDir File tempDir) {

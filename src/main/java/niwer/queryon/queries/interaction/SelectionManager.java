@@ -99,7 +99,7 @@ public class SelectionManager extends QueryExecutor {
     protected String buildQuery() {
         final StringBuilder QUERY = new StringBuilder("SELECT ");
         if (IS_DISTINCT) QUERY.append("DISTINCT ");
-        QUERY.append(QueryonEngine.formatValues(COLUMNS)).append(" FROM ").append(TABLE.name());
+        QUERY.append(QueryonEngine.formatValues(COLUMNS)).append(" FROM ").append(TABLE.escapedName());
 
         /* Add where */
         if (whereCondition != null) QUERY.append(" WHERE ").append(whereCondition.toString());

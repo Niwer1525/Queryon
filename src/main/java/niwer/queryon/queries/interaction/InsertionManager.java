@@ -108,7 +108,7 @@ public class InsertionManager extends QueryExecutor {
     protected String buildQuery() {
         final StringBuilder QUERY = new StringBuilder("INSERT");
         if (IGNORE_CONFLICTS) QUERY.append(" OR IGNORE");
-        QUERY.append(" INTO ").append(TABLE.name()).append(" (").append(QueryonEngine.formatValues(COLUMNS)).append(") VALUES ");
+        QUERY.append(" INTO ").append(TABLE.escapedName()).append(" (").append(QueryonEngine.formatValues(COLUMNS)).append(") VALUES ");
         
         /* Add objects */
         final String VALUES_SQL = ROWS.stream()
@@ -121,7 +121,7 @@ public class InsertionManager extends QueryExecutor {
             case NONE -> { /* No conflict resolution, do nothing */ }
             case DO_NOTHING -> QUERY.append(" ON CONFLICT DO NOTHING");
             case DO_UPDATE -> {
-                QUERY.append(" ON CONFLICT DO UPDATE SET ").append(doUpdateManager.buildQuery().replaceFirst("UPDATE " + TABLE.name() + " SET ", ""));
+                QUERY.append(" ON CONFLICT DO UPDATE SET ").append(doUpdateManager.buildQuery().replaceFirst("UPDATE " + TABLE.escapedName() + " SET ", ""));
             }
         }
 

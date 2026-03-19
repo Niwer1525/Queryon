@@ -34,11 +34,16 @@ public abstract class Table {
     }
 
     public abstract String name();
+
+    public final String escapedName() {
+        return "'" + this.name() + "'";
+    }
     
     public final Set<Column> columns() { return Set.copyOf(COLUMNS); }
 
     /**
      * Helper method to create a column definition for the table. It supports basic column types (INT, VARCHAR, BOOLEAN) and allows to set various constraints (NOT NULL, UNIQUE, AUTO_INCREMENT, PRIMARY KEY) and default values.
+     * 
      * @param name The name of the column
      * @param type The type of the column (INT, VARCHAR, BOOLEAN)
      * @return An SQLColumn instance that can be further configured with constraints and default values, and then added to a table definition using SQLTable.addColumn()
@@ -49,6 +54,7 @@ public abstract class Table {
 
     /**
      * Helper method to create a VARCHAR column definition for the table. It allows to specify the size of the VARCHAR column and supports the same constraints and default values as createColumn.
+     * 
      * @param name The name of the column
      * @param size The size of the VARCHAR column (maximum number of characters)
      * @return An SQLColumn instance that can be further configured with constraints and default values, and then added to a table definition using SQLTable.addColumn()

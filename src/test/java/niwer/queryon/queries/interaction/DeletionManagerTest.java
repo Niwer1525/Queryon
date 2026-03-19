@@ -20,12 +20,12 @@ class DeletionManagerTest {
 
         final String DELETE = DeletionManager.delete(DB, TestUserTable.class)
             .buildQuery();
-        assertEquals("DELETE FROM test_table", DELETE);
+        assertEquals("DELETE FROM 'test_table'", DELETE);
 
         final String DELETE_WHERE = DeletionManager.delete(DB, TestUserTable.class)
             .where(Expression.of("name").like("%A%"))
             .buildQuery();
-        assertEquals("DELETE FROM test_table WHERE name LIKE '%A%'", DELETE_WHERE);
+        assertEquals("DELETE FROM 'test_table' WHERE name LIKE '%A%'", DELETE_WHERE);
     }
 
     @Test void testExecute(@TempDir File tempDir) {

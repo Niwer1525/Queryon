@@ -32,7 +32,7 @@ public class DeletionManager extends QueryExecutor {
     
     @Override
     protected String buildQuery() {
-        final StringBuilder QUERY = new StringBuilder("DELETE FROM ").append(TABLE.name());
+        final StringBuilder QUERY = new StringBuilder("DELETE FROM ").append(TABLE.escapedName());
 
         /* Add WHERE condition */
         if (this.whereCondition != null) QUERY.append(" WHERE ").append(this.whereCondition);

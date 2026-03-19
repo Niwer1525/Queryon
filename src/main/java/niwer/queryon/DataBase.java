@@ -135,7 +135,7 @@ public class DataBase {
      */
     public boolean tabExists(Table table) {
         this.reconnect(); // Ensure the connection is active before executing the query
-        try (final var STATEMENT = this.sqlConnection.prepareStatement("SELECT name FROM sqlite_master WHERE type='table' AND name='" + table.name() + "';")) {
+        try (final var STATEMENT = this.sqlConnection.prepareStatement("SELECT name FROM sqlite_master WHERE type='table' AND name=" + table.escapedName() + ";")) {
             return STATEMENT.executeQuery().next(); // If the query returns a result, the table exists
         } catch (SQLException e) {
             Console.log("Failed to check if table exists: " + e.getMessage()).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
@@ -165,7 +165,7 @@ public class DataBase {
     protected Table dropTable(Class<? extends Table> tableClass) {
         final Table table = this.getTable(tableClass);
         Console.log("Unregistering and dropping table " + table.name()).type(QueryonLogTypes.SQL).container(QueryonEngine.LOGGER).send();
-        QueryManager.query(this, "DROP TABLE IF EXISTS " + table.name() + ";");
+        QueryManager.query(this, "DROP TABLE IF EXISTS " + table.escapedName() + ";");
         REGISTERED_TABLES.remove(table);
         return table;
     }
