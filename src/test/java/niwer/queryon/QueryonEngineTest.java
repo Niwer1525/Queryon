@@ -1,17 +1,20 @@
 package niwer.queryon;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.util.Date;
+import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 public class QueryonEngineTest {
 
-    @TempDir
-    private static File tempDir;
+    private static DataBase setupDB(File dir) {
+        return new DataBase(new File(dir, UUID.randomUUID() + ".db"));
+    }
 
     /**
      * Sets up an empty database with the specified name and registers the TestUserTable.
@@ -19,9 +22,8 @@ public class QueryonEngineTest {
      * @param name the name of the database
      * @return the initialized DataBase instance
      */
-    public static DataBase setupEmptyDB(String name) {
-        final DataBase DB = new DataBase(new File(tempDir, name +".db")).registerTable(TestUserTable.class);
-        return DB;
+    public static DataBase setupEmptyDB(File dir) {
+        return setupDB(dir);
     }
 
     /**
@@ -30,8 +32,8 @@ public class QueryonEngineTest {
      * @param name the name of the database
      * @return the initialized DataBase instance with the TestUserTable registered
      */
-    public static DataBase setupUsersDB(String name) {
-        return setupEmptyDB(name).registerTable(TestUserTable.class);
+    public static DataBase setupUsersDB(File dir) {
+        return setupEmptyDB(dir).registerTable(TestUserTable.class);
     }
 
     /**
@@ -40,8 +42,8 @@ public class QueryonEngineTest {
      * @param name the name of the database
      * @return the initialized DataBase instance with both the TestUserTable and TestFoodTable registered
      */
-    public static DataBase setupUsersAndFoodDB(String name) {
-        return setupEmptyDB(name).registerTable(TestUserTable.class).registerTable(TestFoodTable.class);
+    public static DataBase setupUsersAndFoodDB(File dir) {
+        return setupEmptyDB(dir).registerTable(TestUserTable.class).registerTable(TestFoodTable.class);
     }
 
     public static enum TestEnum {
@@ -74,5 +76,19 @@ public class QueryonEngineTest {
 
         final String FORMATTED_DATE_ESCAPED = QueryonEngine.formatValues(true, "Bob", new Date(0), true);
         assertEquals("'Bob', '1970-01-01 01:00:00', true", FORMATTED_DATE_ESCAPED);
+    }
+
+    @Test void testIsExpression() {
+        assertFalse(QueryonEngine.isExpression("Alice"));
+        assertFalse(QueryonEngine.isExpression(30));
+
+        assertTrue(QueryonEngine.isExpression("age + 1"));
+        assertTrue(QueryonEngine.isExpression("price * quantity"));
+        assertTrue(QueryonEngine.isExpression("price + 2 * quantity"));
+        assertTrue(QueryonEngine.isExpression("score - 5"));
+        assertTrue(QueryonEngine.isExpression("total / 2"));
+        assertTrue(QueryonEngine.isExpression("value % 3"));
+        assertTrue(QueryonEngine.isExpression("date + INTERVAL 1 DAY"));
+        assertTrue(QueryonEngine.isExpression("name || ' ' || surname"));
     }
 }

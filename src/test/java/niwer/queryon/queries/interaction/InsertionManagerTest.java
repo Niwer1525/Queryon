@@ -3,19 +3,22 @@ package niwer.queryon.queries.interaction;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.File;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import niwer.queryon.DataBase;
 import niwer.queryon.QueryonEngineTest;
 import niwer.queryon.TestUserTable;
 import niwer.queryon.TestUserTable.TestUser;
+import niwer.queryon.queries.Expression;
 
 class InsertionManagerTest {
 
-    @Test void testInsertionManagerSQL() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("testInsertion");
+    @Test void testInsertionManagerSQL(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
 
         final String INSERT = InsertionManager.insert(DB, TestUserTable.class, "id", "name", "age")
             .row(1, "Alice", 30)
@@ -28,10 +31,24 @@ class InsertionManagerTest {
             .rows(InsertionManager.of(2, "Bob", 25), InsertionManager.of(3, "Carol", 28))
             .buildQuery();
         assertEquals("INSERT OR IGNORE INTO test_table (id, name, age) VALUES (1, 'Alice', 30), (2, 'Bob', 25), (3, 'Carol', 28)", INSERT_OR_IGNORE);
+
+        final String INSERT_DO_NOTHING = InsertionManager.insertOrIgnore(DB, TestUserTable.class, "id", "name", "age")
+            .row(1, "Alice", 30)
+            .onConflictDoNothing()
+            .buildQuery();
+        assertEquals("INSERT OR IGNORE INTO test_table (id, name, age) VALUES (1, 'Alice', 30) ON CONFLICT DO NOTHING", INSERT_DO_NOTHING);
+
+        final String INSERT_DO_UPDATE = InsertionManager.insertOrIgnore(DB, TestUserTable.class, "id", "name", "age")
+            .row(1, "Alice", 30)
+            .onConflictDoUpdate(
+                UpdateManager.update(DB, TestUserTable.class).set("name", "Alice Updated").where(Expression.of("id").isEqualTo(1))
+            )
+            .buildQuery();
+        assertEquals("INSERT OR IGNORE INTO test_table (id, name, age) VALUES (1, 'Alice', 30) ON CONFLICT DO UPDATE SET name = 'Alice Updated' WHERE id = 1", INSERT_DO_UPDATE);
     }
 
-    @Test void testInsertionInvalidValues() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("testInsertion");
+    @Test void testInsertionInvalidValues(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
 
         assertThrows(IllegalArgumentException.class, () -> InsertionManager.insert(null, TestUserTable.class, "id", "name", "age"));
         assertThrows(IllegalArgumentException.class, () -> InsertionManager.insert(DB, null, "id", "name", "age"));
@@ -44,8 +61,8 @@ class InsertionManagerTest {
         assertThrows(IllegalArgumentException.class, () -> InsertionManager.insertOrIgnore(DB, TestUserTable.class));
     }
 
-    @Test void testInsertionManager() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("testInsertion");
+    @Test void testInsertionManager(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
 
         InsertionManager.insert(DB, TestUserTable.class, "id", "name", "age")
             .row(1, "Alice", 30)

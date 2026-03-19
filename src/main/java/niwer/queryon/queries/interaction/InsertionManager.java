@@ -13,14 +13,14 @@ import niwer.queryon.tables.Table;
  * Supports single and multi-row inserts, inserting from SELECT and UPSERT (ON CONFLICT) clauses.
  * 
  * @author Niwer
- * 
- * //TODO add support for ON CONFLICT (SQLite) for upsert functionality
  */
 public class InsertionManager extends QueryExecutor {
 
     private final String[] COLUMNS;
     private final List<Object[]> ROWS = new ArrayList<>();
     private final boolean IGNORE_CONFLICTS;
+    private ConflictResolution conflictResolution = ConflictResolution.NONE;
+    private UpdateManager doUpdateManager = null;
 
     private InsertionManager(DataBase db, Class<? extends Table> table, boolean ignore, String... columns) {
         super(db, table);
@@ -81,6 +81,29 @@ public class InsertionManager extends QueryExecutor {
         return this;
     }
 
+    /**
+     * Sets the conflict resolution strategy to DO NOTHING, which will ignore any insertion that would violate a constraint (e.g., inserting a duplicate primary key).
+     * 
+     * @return The InsertionManager instance for chaining
+     */
+    public final InsertionManager onConflictDoNothing() {
+        this.conflictResolution = ConflictResolution.DO_NOTHING;
+        return this;
+    }
+
+    /**
+     * Sets the conflict resolution strategy to DO UPDATE, which will perform an update using the provided UpdateManager if a conflict occurs (e.g., updating existing row if inserting a duplicate primary key).
+     * 
+     * @param updateManager The UpdateManager to use for handling conflicts
+     * @return The InsertionManager instance for chaining
+     */
+    public final InsertionManager onConflictDoUpdate(UpdateManager updateManager) {
+        if (updateManager == null) throw new IllegalArgumentException("UpdateManager instance cannot be null for DO UPDATE conflict resolution.");
+        this.conflictResolution = ConflictResolution.DO_UPDATE;
+        this.doUpdateManager = updateManager;
+        return this;
+    }
+
     @Override
     protected String buildQuery() {
         final StringBuilder QUERY = new StringBuilder("INSERT");
@@ -92,9 +115,16 @@ public class InsertionManager extends QueryExecutor {
             .map(row -> "(" + QueryonEngine.formatValues(true, row) + ")")
             .reduce((a, b) -> a + ", " + b)
             .orElseThrow(() -> new IllegalStateException("Failed to build insertion query: No rows to insert."));
-
         QUERY.append(VALUES_SQL);
         
+        switch (conflictResolution) {
+            case NONE -> { /* No conflict resolution, do nothing */ }
+            case DO_NOTHING -> QUERY.append(" ON CONFLICT DO NOTHING");
+            case DO_UPDATE -> {
+                QUERY.append(" ON CONFLICT DO UPDATE SET ").append(doUpdateManager.buildQuery().replaceFirst("UPDATE " + TABLE.name() + " SET ", ""));
+            }
+        }
+
         return QUERY.toString();
     }
 
@@ -105,5 +135,15 @@ public class InsertionManager extends QueryExecutor {
         QueryManager.query(this.DATA_BASE, this.buildQuery());
     }
 
+    /**
+     * Utility method to create an array of objects for a row of values, used for multi-row inserts.
+     * 
+     * @param values The values for the row, in the same order as the specified columns
+     * @return An array of objects representing the row of values
+     */
     public static final Object[] of(Object... values) { return values; }
+
+    public static enum ConflictResolution {
+        NONE, DO_NOTHING, DO_UPDATE;
+    }
 }

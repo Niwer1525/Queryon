@@ -8,6 +8,7 @@ import niwer.queryon.queries.Expression;
 import niwer.queryon.queries.interaction.DeletionManager;
 import niwer.queryon.queries.interaction.InsertionManager;
 import niwer.queryon.queries.interaction.SelectionManager;
+import niwer.queryon.queries.interaction.UpdateManager;
 
 /**
  * This is a global test class that demonstrates the usage of the Queryon library.
@@ -59,8 +60,6 @@ public class GlobalTest {
                 .where(Expression.of("age").isGreaterThan(26))
                 .executeList(TestUser.class);
             Console.log(USERS).container(QueryonEngine.LOGGER).send();
-
-            // (int)executeSQLCommandForPrimitive("SELECT COUNT(*) FROM PlayerAccount WHERE LOWER(email) = LOWER(?)", email.trim()) > 0;
         }
 
         {
@@ -84,7 +83,26 @@ public class GlobalTest {
         }
 
         {
-            
+            /* Insert a new user */
+            InsertionManager.insert(DB, TestUserTable.class, "id", "name", "age")
+                .row(255521, "Lou", 22)
+                .execute();
+
+            /* Prepare a selection query to check existance of the new user */
+            final TestUser INSERTED_USER = SelectionManager.select(DB, TestUserTable.class)
+                .where(Expression.of("name").isEqualTo("Lou")).executeSerializable(TestUser.class);
+            Console.log(INSERTED_USER).send();
+        
+            /* Update the new user's name to Louis */
+            UpdateManager.update(DB, TestUserTable.class)
+                .set("name", "Louis")
+                .where(Expression.of("id").isEqualTo(255521))
+                .execute();
+
+            /* Check that the user's name has been updated */
+            final TestUser UPDATED_USER = SelectionManager.select(DB, TestUserTable.class)
+                .where(Expression.of("id").isEqualTo(255521)).executeSerializable(TestUser.class);
+            Console.log(UPDATED_USER).send();
         }
     }
 }

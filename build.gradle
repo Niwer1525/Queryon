@@ -19,11 +19,11 @@ dependencies {
     // This dependency is used by the application.
     // implementation "com.google.code.gson:gson:${project.gson_version}"
     implementation "org.xerial:sqlite-jdbc:${project.sqlite_jdbc_version}"
-    implementation "com.github.Niwer1525:Lumen:${project.lumen_version}"
+    api "com.github.Niwer1525:Lumen:${project.lumen_version}"
 
     // shadow("com.google.code.gson:gson:${project.gson_version}")
     shadow("org.xerial:sqlite-jdbc:${project.sqlite_jdbc_version}")
-    shadow("com.github.Niwer1525:Lumen:${project.lumen_version}")
+    // shadow("com.github.Niwer1525:Lumen:${project.lumen_version}")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.

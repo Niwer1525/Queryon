@@ -3,6 +3,7 @@ package niwer.queryon;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.regex.Pattern;
 
 import niwer.lumen.LumenEngine;
 import niwer.lumen.container.Container;
@@ -10,6 +11,9 @@ import niwer.lumen.container.Container;
 public class QueryonEngine {
 
     public static final Container LOGGER = LumenEngine.registerContainer("QUERYON");
+        private static final Pattern EXPRESSION_PATTERN = Pattern.compile(
+            "(?i)^\\s*.+\\s*(?:\\|\\||[+\\-*/%])\\s*.+\\s*$"
+        );
 
     /**
      * Convert a Date object to String in yyyy-MM-dd format.
@@ -59,5 +63,16 @@ public class QueryonEngine {
      */
     public static String formatValues(String... values) {
         return String.join(", ", values);
+    }
+
+    /**
+     * Checks if a value is an expression (contains SQL operators) rather than a literal value.
+     * 
+     * @param value The value to check
+     * @return True if the value is an expression, false if it's a literal value
+     */
+    public static boolean isExpression(Object value) {
+        if (!(value instanceof String str)) return false;
+        return EXPRESSION_PATTERN.matcher(str).matches();
     }
 }

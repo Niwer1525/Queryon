@@ -16,6 +16,7 @@ The objective of this project is to provide a simple and intuitive API to build 
 - Triggers
 - Transactions
 - Select JOINS, GROUP BY and HAVING
+- Select COUNT, SUM, AVG, MIN, MAX and other aggregate functions
 
 ## How to install
 
@@ -291,10 +292,26 @@ InsertionManager.insertOrIgnore(DB, TestUserTable.class, "id", "name", "age")
 ```
 This correspond to the SQL query `INSERT OR IGNORE INTO test_table (id, name, age) VALUES (1, 'Alice', 30), (2, 'Bob', 25), (3, 'Carol', 28);`.
 
-Alternatively, you can setup one ore multiple conflict resolution strategy for the insertion like this :
+Alternatively, you can setup a conflict resolution strategy for the insertion like this :
 ```java
-//TODO
+InsertionManager.insertWithConflictResolution(DB, TestUserTable.class, "id", "name", "age")
+    .conflictResolutionStrategy(EnumConflictResolutionStrategy.REPLACE) // This will replace the existing row with the new one if a conflict occur
+    .row(1, "Alice", 30)
+    .onConflicDoNothing() // This will do nothing if a conflict occur, you can also use onConflictDoUpdate() to update the existing row with the new one if a conflict occur
+    .execute();
 ```
+This correspond to the SQL query `INSERT INTO test_table (id, name, age) VALUES (1, 'Alice', 30) ON CONFLICT(id) DO NOTHING;`.
+
+```java
+InsertionManager.insertWithConflictResolution(DB, TestUserTable.class, "id", "name", "age")
+    .conflictResolutionStrategy(EnumConflictResolutionStrategy.REPLACE) // This will replace the existing row with the new one if a conflict occur
+    .row(1, "Alice", 30)
+    .onConflictDoUpdate(
+        UpdateManager.update(DB, TestUserTable.class).set("name", "Alice Updated").where(Expression.of("id").isEqualTo(1))
+    )
+    .execute();
+```
+This correspond to the SQL query `INSERT INTO test_table (id, name, age) VALUES (1, 'Alice', 30) ON CONFLICT(id) DO UPDATE SET name = 'Alice Updated' WHERE id = 1;`.
 
 ### Select
 You can do a simple select like this :
@@ -347,6 +364,44 @@ SelectionManager.select(DATA_BASE, UserTable.class).executeCountResults(); // Wi
 ```
 
 ### Update
+You can do a simple update like this :
+```java
+UpdateManager.update(DATA_BASE, UserTable.class)
+    .set("age", 31)
+    .where(Expression.of("id").isEqualTo(1))
+    .execute();
+```
+This correspond to the SQL query `UPDATE users SET age = 31 WHERE id = 1;`.
+
+You can also update multiple columns at once like this :
+```java
+UpdateManager.update(DATA_BASE, UserTable.class)
+    .set("age", 31)
+    .set("name", "Alice Smith")
+    .where(Expression.of("id").isEqualTo(1))
+    .execute();
+```
+This correspond to the SQL query `UPDATE users SET age = 31, name = 'Alice Smith' WHERE id = 1;`.
+
+You can also update columns using expressions like this :
+```java
+UpdateManager.update(DATA_BASE, UserTable.class)
+    .set("age", "age + 1") // This will increment the age by 1
+    .set("salary_bonus", "salary_bonus * 1.1 + 5") // This will increment the salary_bonus by 10% and then add 5
+    .set("salary", "salary + salary_bonus") // This will increment the salary by the value of salary_bonus
+    .where(Expression.of("id").isEqualTo(1))
+    .execute();
+```
+
+You can also use subqueries in the update like this :
+```java
+UpdateManager.update(DATA_BASE, UserTable.class)
+    .set("age", SelectionManager.select(DATA_BASE, UserTable.class)
+        .where(Expression.of("id").isEqualTo(2))
+    ) // This will set the age to the age of the user with id 2
+    .where(Expression.of("id").isEqualTo(1))
+    .execute();
+```
 
 ### Delete
 ```java

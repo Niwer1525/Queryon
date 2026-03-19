@@ -20,6 +20,7 @@ public class TestUserTable extends Table {
         )
         .execute(); // Execute the table creation in the database
 
+        /* If we want to add a new column, it will alter the table */
         // this.addColumns(
         //     createColumn(db, "id", EnumColumnTypes.INT).autoIncrement().primaryKey(),
         //     createColumn(db, "name", 255).notNull(),

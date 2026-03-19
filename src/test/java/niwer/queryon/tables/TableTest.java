@@ -5,7 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.File;
+
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import niwer.queryon.DataBase;
 import niwer.queryon.QueryonEngineTest;
@@ -18,21 +21,21 @@ import niwer.queryon.tables.api.IForeignKey;
 
 class TableTest {
 
-    @Test void testCreateTable() {
-        assertDoesNotThrow(() -> new Table(QueryonEngineTest.setupUsersDB("testCreateTable")) {
+    @Test void testCreateTable(@TempDir File tempDir) {
+        assertDoesNotThrow(() -> new Table(QueryonEngineTest.setupUsersDB(tempDir)) {
             @Override public String name() { return "test_table"; }
         });
     }
 
-    @Test void testCreateEmptyTable() {
-        final Table TABLE = new Table(QueryonEngineTest.setupUsersDB("testCreateTable")) {
+    @Test void testCreateEmptyTable(@TempDir File tempDir) {
+        final Table TABLE = new Table(QueryonEngineTest.setupUsersDB(tempDir)) {
             @Override public String name() { return "test_table"; }
         };
         assertDoesNotThrow(() -> TABLE.execute());
     }
 
-    @Test void testCreateTableWithColumnsAndConstraints() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("testCreateTableWithColumnsAndConstraints");
+    @Test void testCreateTableWithColumnsAndConstraints(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         final Table TABLE = new Table(DB) {
             @Override public String name() { return "test_table"; }
         };
@@ -43,25 +46,25 @@ class TableTest {
         );
     }
     
-    @Test void testCreateTableIllegalArgs() {
+    @Test void testCreateTableIllegalArgs(@TempDir File tempDir) {
         assertThrows(IllegalArgumentException.class, () -> new Table(null) {
             @Override public String name() { return "test_table"; }
 
         }, "createTable should throw IllegalArgumentException if DataBase instance is null");
 
-        assertThrows(IllegalArgumentException.class, () -> new Table(QueryonEngineTest.setupUsersDB("testCreateTableIllegalArgs")) {
+        assertThrows(IllegalArgumentException.class, () -> new Table(QueryonEngineTest.setupUsersDB(tempDir)) {
             @Override public String name() { return ""; }
         }, "createTable should throw IllegalArgumentException if table name is empty");
 
         assertThrows(IllegalArgumentException.class, () -> {
-            new Table(QueryonEngineTest.setupUsersDB("testCreateTableIllegalArgsNullName")) {
+            new Table(QueryonEngineTest.setupUsersDB(tempDir)) {
                 @Override public String name() { return null; }
             };
         }, "createTable should throw IllegalArgumentException if table name is null");
     }
 
-    @Test void testCreateColumn() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("testCreateColumn");
+    @Test void testCreateColumn(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         final Column INT_COLUMN = Table.createColumn(DB, "int_column", EnumColumnTypes.INT);
         assertNotNull(INT_COLUMN, "createColumn should return a non-null SQLColumn instance");
 
@@ -72,8 +75,8 @@ class TableTest {
         assertNotNull(ENUM_COLUMN, "createColumn should return a non-null SQLColumn instance for ENUM type");
     }
 
-    @Test void testAddColumn() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("testAddColumn");
+    @Test void testAddColumn(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         final Table TABLE = new Table(DB) {
             @Override public String name() { return "test_table"; }
         };
@@ -82,24 +85,24 @@ class TableTest {
         assertEquals(1, TABLE.columns().size(), "addColumn should add the column to the table's column map");
     }
 
-    @Test void testDropTable() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("testDropTable");
+    @Test void testDropTable(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         final Table TABLE = new Table(DB) {
             @Override public String name() { return "test_table"; }
         };
         assertDoesNotThrow(() -> TABLE.dropTable(), "dropTable should not throw an exception when dropping an existing table");
     }
 
-    @Test void testDropAllRows() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("testDropAllRows");
+    @Test void testDropAllRows(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         final Table TABLE = new Table(DB) {
             @Override public String name() { return "test_table"; }
         };
         assertDoesNotThrow(() -> TABLE.dropAllRows(), "dropAllRows should not throw an exception when dropping all rows from an existing table");
     }
 
-    @Test void testCreateColumnIllegalArgs() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("testCreateColumnIllegalArgs");
+    @Test void testCreateColumnIllegalArgs(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         assertThrows(IllegalArgumentException.class, () -> Table.createColumn(null, "column_name", EnumColumnTypes.INT), "createColumn should throw IllegalArgumentException if column name is null");
         assertThrows(IllegalArgumentException.class, () -> Table.createColumn(DB, null, EnumColumnTypes.INT), "createColumn should throw IllegalArgumentException if column name is null");
         assertThrows(IllegalArgumentException.class, () -> Table.createColumn(DB, "", EnumColumnTypes.INT), "createColumn should throw IllegalArgumentException if column name is empty");
@@ -113,16 +116,16 @@ class TableTest {
         assertThrows(IllegalArgumentException.class, () -> Table.createColumn(DB, "null", (Class<? extends Enum<?>>)null), "createColumn should throw IllegalArgumentException if column name is null");
     }
 
-    @Test void testCreateColumnFromAnnotationIllegalArgs() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("testCreateColumnFromAnnotationIllegalArgs");
+    @Test void testCreateColumnFromAnnotationIllegalArgs(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         final Table TABLE = new Table(DB) {
             @Override public String name() { return "test_table"; }
         };
         assertThrows(IllegalArgumentException.class, () -> TABLE.addColumnsFromClass(null), "Should throw IllegalArgumentException if class is null");
     }
 
-    @Test void testCreateColumnFromAnnotation() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("testCreateColumnFromAnnotation")
+    @Test void testCreateColumnFromAnnotation(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir)
             .registerTable(TestFoodTable.class);
         final Table TABLE = new Table(DB) {
             @Override public String name() { return "test_table"; }
@@ -133,8 +136,8 @@ class TableTest {
         }, "Should not throw an exception when creating a column from a valid ColumnField annotation");
     }
 
-    @Test void testCreateColumnFromAnnotationIllegal() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("testCreateColumnFromAnnotationIllegal");
+    @Test void testCreateColumnFromAnnotationIllegal(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         final Table TABLE = new Table(DB) {
             @Override public String name() { return "test_table"; }
         };

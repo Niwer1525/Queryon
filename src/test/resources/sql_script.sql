@@ -2,21 +2,6 @@
 /* 2) INSERT - all common forms                                 */
 /* ------------------------------------------------------------- */
 
-/* 2.5 UPSERT: ON CONFLICT DO NOTHING */
-INSERT INTO users AS u (id, email, username, age, salary, department_id)
-VALUES (4, 'dave@example.com', 'dave', 29, 65000, 3)
-ON CONFLICT(email) DO NOTHING;
-
-/* 2.6 UPSERT: ON CONFLICT DO UPDATE with excluded alias */
-INSERT INTO users AS u (id, email, username, age, salary, department_id)
-VALUES (4, 'dave@example.com', 'dave-updated', 30, 68000, 1)
-ON CONFLICT(email) DO UPDATE SET
-    username = excluded.username,
-    age = excluded.age,
-    salary = excluded.salary,
-    department_id = excluded.department_id
-WHERE u.salary < excluded.salary;
-
 /* 2.7 INSERT INTO ... SELECT */
 INSERT INTO users (id, email, username, age, salary, department_id)
 SELECT
@@ -122,41 +107,6 @@ SELECT
     RANK() OVER (ORDER BY u.salary DESC) AS salary_rank,
     SUM(u.salary) OVER (PARTITION BY u.department_id) AS department_salary_sum
 FROM users u;
-
-/* ------------------------------------------------------------- */
-/* 4) UPDATE - simple, expression, correlated, from, returning  */
-/* ------------------------------------------------------------- */
-
-/* 4.1 Basic update */
-UPDATE users
-SET age = 31
-WHERE id = 1;
-
-/* 4.2 Update multiple columns with expressions */
-UPDATE users
-SET
-    salary = salary * 1.05,
-    updated_at = CURRENT_TIMESTAMP
-WHERE department_id = 1;
-
-/* 4.3 Correlated update via subquery */
-UPDATE orders
-SET total_amount = (
-    SELECT COALESCE(SUM(oi.quantity * oi.unit_price), 0)
-    FROM order_items oi
-    WHERE oi.order_id = orders.id
-)
-WHERE id = 1000;
-
-/* 4.4 UPDATE ... FROM (SQLite >= 3.33) */
-UPDATE users
-SET salary = salary + bonus.extra
-FROM (
-    SELECT 1 AS user_id, 1000 AS extra
-    UNION ALL
-    SELECT 2 AS user_id, 500 AS extra
-) AS bonus
-WHERE users.id = bonus.user_id;
 
 /* ------------------------------------------------------------- */
 /* 6) VIEW / INDEX / TRIGGER                                    */

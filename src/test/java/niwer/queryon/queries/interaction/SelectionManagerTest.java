@@ -5,9 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.File;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import niwer.queryon.DataBase;
 import niwer.queryon.QueryonEngineTest;
@@ -18,8 +20,8 @@ import niwer.queryon.queries.interaction.SelectionManager.EnumOrder;
 
 class SelectionManagerTest {
 
-    @Test void testSelectionManagerSQL() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("testSelection");
+    @Test void testSelectionManagerSQL(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
 
         final String SELECT_ALL = SelectionManager.select(DB, TestUserTable.class)
             .buildQuery();
@@ -55,8 +57,8 @@ class SelectionManagerTest {
         assertEquals("SELECT id, name FROM test_table WHERE age > 25 ORDER BY id ASC, email ASC, name DESC", SELECT_COLUMNS_ORDER_BY_WHERE);
     }
 
-    @Test void testSelectionInvalidValues() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("testSelection");
+    @Test void testSelectionInvalidValues(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
 
        assertThrows(IllegalArgumentException.class, () -> SelectionManager.select(null, TestUserTable.class));
        assertThrows(IllegalArgumentException.class, () -> SelectionManager.select(DB, null));
@@ -71,9 +73,9 @@ class SelectionManagerTest {
        assertDoesNotThrow(() -> SelectionManager.selectDistinct(DB, TestUserTable.class, new String[] {}));
     }
 
-    @Test void testSelectionManager() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("testSelection");
-        
+    @Test void testSelectionManager(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
+
         InsertionManager.insert(DB, TestUserTable.class, "id", "name", "age")
             .rows(InsertionManager.of(1, "Alice", 30), InsertionManager.of(2, "Bob", 25), InsertionManager.of(3, "Carol", 28))
             .execute();

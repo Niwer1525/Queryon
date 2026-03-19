@@ -5,9 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.File;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import niwer.queryon.DataBase;
 import niwer.queryon.QueryonEngineTest;
@@ -32,32 +34,32 @@ class QueryManagerTest {
         """, 4, "Chloée", 20);
     }
 
-    @Test void testNullParameters() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("null_parameters");
+    @Test void testNullParameters(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         final Object[] EMPTY_PARAMS = new Object[]{};
         assertThrows(IllegalArgumentException.class, () -> QueryManager.query(null, null, "SELECT * FROM test_table", EMPTY_PARAMS));
         assertThrows(IllegalArgumentException.class, () -> QueryManager.query(DB, null, null, EMPTY_PARAMS));
         assertThrows(IllegalArgumentException.class, () -> QueryManager.query(DB, null, "", EMPTY_PARAMS));
     }
 
-    @Test void testNoResultQueryNullParameters() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("no_result_null_parameters");
+    @Test void testNoResultQueryNullParameters(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         assertThrows(IllegalArgumentException.class, () -> QueryManager.query(null, "INSERT INTO test_table (id, name, age) VALUES (?, ?, ?)", 1, "Alice", 30));
         assertThrows(IllegalArgumentException.class, () -> QueryManager.query(DB, (String)null, "INSERT INTO test_table (id, name, age) VALUES (?, ?, ?)", 1, "Alice", 30));
         assertThrows(IllegalArgumentException.class, () -> QueryManager.query(DB, "", "", 1, "Alice", 30));
     }
 
-    @Test void testNoResultQuery() {
+    @Test void testNoResultQuery(@TempDir File tempDir) {
         assertDoesNotThrow(() -> {
-            final DataBase DB = QueryonEngineTest.setupUsersDB("no_result");
+            final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
             QueryManager.query(DB, """
                 INSERT INTO test_table (id, name, age) VALUES (?, ?, ?)
             """, 0, "Vanessa", 35);
         });
     }
 
-    @Test void testSingleResultSerializableQuery() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("single_result_serializable");
+    @Test void testSingleResultSerializableQuery(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         addUsers(DB);
 
         final Object RESULT = QueryManager.querySerializable(DB, TestUser.class, """
@@ -67,8 +69,8 @@ class QueryManagerTest {
         assertInstanceOf(TestUser.class, RESULT);
     }
 
-    @Test void testSingleResultQuery() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("single_result");
+    @Test void testSingleResultQuery(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         addUsers(DB);
 
         final Object RESULT = QueryManager.query(DB, TestUser.class, """
@@ -78,8 +80,8 @@ class QueryManagerTest {
         assertInstanceOf(TestUser.class, RESULT);
     }
 
-    @Test void testMultipleResultQuery() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("multiple_result");
+    @Test void testMultipleResultQuery(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         addUsers(DB);
 
         final Object RESULT = QueryManager.queryList(DB, TestUser.class, """
@@ -89,8 +91,8 @@ class QueryManagerTest {
         assertInstanceOf(List.class, RESULT);
     }
 
-    @Test void testSingleResultQueryList() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("single_result_query_list");
+    @Test void testSingleResultQueryList(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         addUsers(DB);
 
         assertThrows(IllegalStateException.class, () -> {
@@ -100,8 +102,8 @@ class QueryManagerTest {
         });
     }
 
-    @Test void testExecuteSQLCommandForPrimitive() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("primitive_result");
+    @Test void testExecuteSQLCommandForPrimitive(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         addUsers(DB);
 
         final Object RESULT = QueryManager.queryPrimitive(DB, Integer.class, """
@@ -111,8 +113,8 @@ class QueryManagerTest {
         assertInstanceOf(Integer.class, RESULT);
     }
 
-    @Test void testQueryPrimitiveWithNoResult() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("primitive_no_result");
+    @Test void testQueryPrimitiveWithNoResult(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         addUsers(DB);
 
         final Object RESULT = QueryManager.queryPrimitive(DB, Integer.class, """
@@ -123,8 +125,8 @@ class QueryManagerTest {
         assert(RESULT.equals(0));
     }
 
-    @Test void testPrimitiveFunctions() {
-        final DataBase DB = QueryonEngineTest.setupUsersDB("primitive_functions");
+    @Test void testPrimitiveFunctions(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         addUsers(DB);
 
         final Object COUNT_RESULT = QueryManager.queryInt(DB, """

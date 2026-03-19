@@ -1,6 +1,6 @@
 package niwer.queryon.queries.interaction;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import niwer.queryon.DataBase;
@@ -17,12 +17,10 @@ import niwer.queryon.tables.Table;
  */
 public class UpdateManager extends QueryExecutor {
 
-    private final Set<String> SETS = new HashSet<>();
+    private final Set<String> SETS = new LinkedHashSet<>();
     private Expression whereCondition = null;
 
-    private UpdateManager(DataBase dataBase, Class<? extends Table> tableClas) {
-        super(dataBase, tableClas);
-    }
+    private UpdateManager(DataBase dataBase, Class<? extends Table> tableClas) { super(dataBase, tableClas); }
 
     /**
      * Starts an update query for the specified table and columns.
@@ -37,9 +35,37 @@ public class UpdateManager extends QueryExecutor {
         return new UpdateManager(db, table);
     }
 
+    /**
+     * Adds a column and its new value to the update query.
+     * 
+     * @param column The name of the column to update
+     * @param value The new value for the column, which can be a literal value or an expression (e.g., "age + 1")
+     * @return The UpdateManager instance for chaining
+     */
     public final UpdateManager set(String column, Object value) {
         if (column == null || column.isEmpty()) throw new IllegalArgumentException("Column name cannot be null or empty.");
-        this.SETS.add(column + " = " + QueryonEngine.formatValues(true, value));
+        if(value == null) {
+            this.SETS.add(column + " = NULL");
+            return this;
+        }
+        this.SETS.add(column + " = " + QueryonEngine.formatValues(!QueryonEngine.isExpression(value), value));
+        return this;
+    }
+
+    /**
+     * Adds a column and a subquery to the update query.
+     * 
+     * @param column The name of the column to update
+     * @param select The SelectionManager instance representing the subquery to use as the new value for the column
+     * @return The UpdateManager instance for chaining
+     * 
+     * @note The subquery will be wrapped in parentheses in the generated SQL query, so the SelectionManager should be built to generate a valid subquery (e.g., "SELECT MAX(age) FROM users").
+     * @note if the select parameter is null, it will be treated as setting the column to NULL.
+     */
+    public final UpdateManager set(String column, SelectionManager select) {
+        if (column == null || column.isEmpty()) throw new IllegalArgumentException("Column name cannot be null or empty.");
+        if(select == null) return set(column, (Object) null);
+        this.SETS.add(column + " = (" + select.buildQuery() + ")");
         return this;
     }
 

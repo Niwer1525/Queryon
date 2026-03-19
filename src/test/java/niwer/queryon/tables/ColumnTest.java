@@ -3,7 +3,10 @@ package niwer.queryon.tables;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.File;
+
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import niwer.queryon.QueryonEngineTest;
 import niwer.queryon.TestUserTable;
@@ -11,9 +14,9 @@ import niwer.queryon.queries.Expression;
 
 class ColumnTest {
 
-    @Test void testColumnCreation() {
+    @Test void testColumnCreation(@TempDir File tempDir) {
         assertDoesNotThrow(() -> {
-            new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "test_column", EnumColumnTypes.INT, 0, null)
+            new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.INT, 0, null)
                 .autoIncrement()
                 .notNull()
                 .unique()
@@ -31,9 +34,9 @@ class ColumnTest {
         });
     }
 
-    @Test void testColumnCreationWithDefaultValue() {
+    @Test void testColumnCreationWithDefaultValue(@TempDir File tempDir) {
         assertDoesNotThrow(() -> {
-            new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "test_column", EnumColumnTypes.REAL, 0, null)
+            new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.REAL, 0, null)
                 .autoIncrement()
                 .notNull()
                 .unique()
@@ -41,9 +44,9 @@ class ColumnTest {
         });
     }
 
-    @Test void testVarCharDefaultValue() {
+    @Test void testVarCharDefaultValue(@TempDir File tempDir) {
         assertDoesNotThrow(() -> {
-            new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "test_column", EnumColumnTypes.VARCHAR, 255, null)
+            new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.VARCHAR, 255, null)
                 .autoIncrement()
                 .notNull()
                 .unique()
@@ -51,7 +54,7 @@ class ColumnTest {
         });
 
         assertThrows(IllegalArgumentException.class, () -> {
-            new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "test_column", EnumColumnTypes.VARCHAR, 5, null)
+            new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.VARCHAR, 5, null)
                 .autoIncrement()
                 .notNull()
                 .unique()
@@ -59,9 +62,9 @@ class ColumnTest {
         });
     }
 
-    @Test void testTextColumnCreation() {
+    @Test void testTextColumnCreation(@TempDir File tempDir) {
         assertDoesNotThrow(() -> {
-            new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "test_column", EnumColumnTypes.TEXT, 0, null)
+            new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.TEXT, 0, null)
                 .autoIncrement()
                 .notNull()
                 .unique()
@@ -69,9 +72,9 @@ class ColumnTest {
         });
     }
 
-    @Test void testColumnCreationBoolean() {
+    @Test void testColumnCreationBoolean(@TempDir File tempDir) {
         assertDoesNotThrow(() -> {
-            new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "test_column", EnumColumnTypes.BOOLEAN, 0, null)
+            new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.BOOLEAN, 0, null)
                 .autoIncrement()
                 .notNull()
                 .unique()
@@ -79,9 +82,9 @@ class ColumnTest {
         });
     }
 
-    @Test void testColumnCreationDate() {
+    @Test void testColumnCreationDate(@TempDir File tempDir) {
         assertDoesNotThrow(() -> {
-            new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "test_column", EnumColumnTypes.DATE, 0, null)
+            new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.DATE, 0, null)
                 .autoIncrement()
                 .notNull()
                 .unique()
@@ -89,7 +92,7 @@ class ColumnTest {
         });
 
         assertDoesNotThrow(() -> {
-            new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "test_column", EnumColumnTypes.DATE_TIME, 0, null)
+            new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.DATE_TIME, 0, null)
                 .autoIncrement()
                 .notNull()
                 .unique()
@@ -98,7 +101,7 @@ class ColumnTest {
 
         {
             assertDoesNotThrow(() -> {
-                new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "test_column", EnumColumnTypes.DATE, 0, null)
+                new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.DATE, 0, null)
                     .autoIncrement()
                     .notNull()
                     .unique()
@@ -106,7 +109,7 @@ class ColumnTest {
             });
             
             assertDoesNotThrow(() -> {
-                new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "test_column", EnumColumnTypes.DATE_TIME, 0, null)
+                new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.DATE_TIME, 0, null)
                     .autoIncrement()
                     .notNull()
                     .unique()
@@ -116,7 +119,7 @@ class ColumnTest {
         
         {
             assertDoesNotThrow(() -> {
-                new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "test_column", EnumColumnTypes.DATE, 0, null)
+                new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.DATE, 0, null)
                     .autoIncrement()
                     .notNull()
                     .unique()
@@ -124,7 +127,7 @@ class ColumnTest {
             });
 
             assertDoesNotThrow(() -> {
-                new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "test_column", EnumColumnTypes.DATE_TIME, 0, null)
+                new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.DATE_TIME, 0, null)
                     .autoIncrement()
                     .notNull()
                     .unique()
@@ -134,7 +137,7 @@ class ColumnTest {
 
         {
             assertThrows(IllegalArgumentException.class, () -> {
-                new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "test_column", EnumColumnTypes.DATE, 0, null)
+                new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.DATE, 0, null)
                     .autoIncrement()
                     .notNull()
                     .unique()
@@ -142,7 +145,7 @@ class ColumnTest {
             });
     
             assertThrows(IllegalArgumentException.class, () -> {
-                new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "test_column", EnumColumnTypes.DATE_TIME, 0, null)
+                new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.DATE_TIME, 0, null)
                     .autoIncrement()
                     .notNull()
                     .unique()
@@ -150,7 +153,7 @@ class ColumnTest {
             });
     
             assertThrows(IllegalArgumentException.class, () -> {
-                new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "test_column", EnumColumnTypes.DATE_TIME, 0, null)
+                new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.DATE_TIME, 0, null)
                     .autoIncrement()
                     .notNull()
                     .unique()
@@ -159,9 +162,9 @@ class ColumnTest {
         }
     }
 
-    @Test void testColumnCreationEnum() {
+    @Test void testColumnCreationEnum(@TempDir File tempDir) {
         assertDoesNotThrow(() -> {
-            new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "test_column", EnumColumnTypes.ENUM, 0, QueryonEngineTest.TestEnum.class)
+            new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.ENUM, 0, QueryonEngineTest.TestEnum.class)
                 .autoIncrement()
                 .notNull()
                 .unique()
@@ -169,9 +172,9 @@ class ColumnTest {
         });
     }
 
-    @Test void testColumnCreationDefaultWithExpression() {
+    @Test void testColumnCreationDefaultWithExpression(@TempDir File tempDir) {
         assertDoesNotThrow(() -> {
-            new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "test_column", EnumColumnTypes.INT, 0, null)
+            new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.INT, 0, null)
                 .autoIncrement()
                 .notNull()
                 .unique()
@@ -179,9 +182,9 @@ class ColumnTest {
         });
     }
 
-    @Test void testColumnEnumWithInvalidDefault() {
+    @Test void testColumnEnumWithInvalidDefault(@TempDir File tempDir) {
         assertThrows(IllegalArgumentException.class, () -> {
-            new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "test_column", EnumColumnTypes.ENUM, 0, QueryonEngineTest.TestEnum.class)
+            new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.ENUM, 0, QueryonEngineTest.TestEnum.class)
                 .autoIncrement()
                 .notNull()
                 .unique()
@@ -189,9 +192,9 @@ class ColumnTest {
         });
     }
 
-    @Test void testColumnCreationInvalidDefaultWithExpression() {
+    @Test void testColumnCreationInvalidDefaultWithExpression(@TempDir File tempDir) {
         assertThrows(IllegalArgumentException.class, () -> {
-            new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "test_column", EnumColumnTypes.ENUM, 0, QueryonEngineTest.TestEnum.class)
+            new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.ENUM, 0, QueryonEngineTest.TestEnum.class)
                 .autoIncrement()
                 .notNull()
                 .unique()
@@ -199,21 +202,21 @@ class ColumnTest {
         });
     }
 
-    @Test void testForeignKeyDefinition() {
+    @Test void testForeignKeyDefinition(@TempDir File tempDir) {
         assertDoesNotThrow(() -> {
-            new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "user_id", EnumColumnTypes.INT, 0, null)
+            new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "user_id", EnumColumnTypes.INT, 0, null)
                 .foreignKey(TestUserTable.class, "id", EnumForeginKeyAction.SET_NULL)
                 .foreignKey(TestUserTable.class, null, EnumForeginKeyAction.SET_NULL)
             ;
         });
     }
 
-    @Test void testInvalidColumnCreation() {
+    @Test void testInvalidColumnCreation(@TempDir File tempDir) {
         assertThrows(IllegalArgumentException.class, () -> new Column(null, "test_column", EnumColumnTypes.INT, 0, null));
-        assertThrows(IllegalArgumentException.class, () -> new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), null, EnumColumnTypes.INT, 0, null));
-        assertThrows(IllegalArgumentException.class, () -> new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "", EnumColumnTypes.INT, 0, null));
-        assertThrows(IllegalArgumentException.class, () -> new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "test_column", null, 0, null));
-        assertThrows(IllegalArgumentException.class, () -> new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "test_column", EnumColumnTypes.VARCHAR, -1, null));
-        assertThrows(IllegalArgumentException.class, () -> new Column(QueryonEngineTest.setupUsersAndFoodDB("test"), "test_column", EnumColumnTypes.ENUM, 0, null));
+        assertThrows(IllegalArgumentException.class, () -> new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), null, EnumColumnTypes.INT, 0, null));
+        assertThrows(IllegalArgumentException.class, () -> new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "", EnumColumnTypes.INT, 0, null));
+        assertThrows(IllegalArgumentException.class, () -> new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", null, 0, null));
+        assertThrows(IllegalArgumentException.class, () -> new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.VARCHAR, -1, null));
+        assertThrows(IllegalArgumentException.class, () -> new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.ENUM, 0, null));
     }
 }
