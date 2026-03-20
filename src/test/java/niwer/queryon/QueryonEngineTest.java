@@ -81,15 +81,16 @@ public class QueryonEngineTest {
     @Test void testIsExpression() {
         assertFalse(QueryonEngine.isExpression("Alice"));
         assertFalse(QueryonEngine.isExpression(30));
+        assertFalse(QueryonEngine.isExpression("2026-03-20T19:59:29"));
 
-        assertTrue(QueryonEngine.isExpression("age + 1"));
-        assertTrue(QueryonEngine.isExpression("price * quantity"));
-        assertTrue(QueryonEngine.isExpression("price + 2 * quantity"));
-        assertTrue(QueryonEngine.isExpression("score - 5"));
-        assertTrue(QueryonEngine.isExpression("total / 2"));
-        assertTrue(QueryonEngine.isExpression("value % 3"));
-        assertTrue(QueryonEngine.isExpression("date + INTERVAL 1 DAY"));
-        assertTrue(QueryonEngine.isExpression("name || ' ' || surname"));
+        assertTrue(QueryonEngine.isExpression(QueryonEngine.raw("age + 1")));
+        assertTrue(QueryonEngine.isExpression(QueryonEngine.raw("price * quantity")));
+        assertTrue(QueryonEngine.isExpression(QueryonEngine.raw("price + 2 * quantity")));
+        assertTrue(QueryonEngine.isExpression(QueryonEngine.raw("score - 5")));
+        assertTrue(QueryonEngine.isExpression(QueryonEngine.raw("total / 2")));
+        assertTrue(QueryonEngine.isExpression(QueryonEngine.raw("value % 3")));
+        assertTrue(QueryonEngine.isExpression(QueryonEngine.raw("date + INTERVAL 1 DAY")));
+        assertTrue(QueryonEngine.isExpression(QueryonEngine.raw("name || ' ' || surname")));
     }
 
     @Test void testEscapeString() {

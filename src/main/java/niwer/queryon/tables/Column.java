@@ -220,6 +220,17 @@ public class Column {
         return QUERY.toString();
     }
 
+    /**
+     * Builds a SQLite-safe column definition for ALTER TABLE ... ADD COLUMN.
+     * SQLite does not allow adding UNIQUE, PRIMARY KEY, or AUTO_INCREMENT constraints this way.
+     */
+    protected final String toAlterColumnSQL() {
+        final StringBuilder QUERY = new StringBuilder(ESCAPED_NAME + " " + TYPE.sql());
+        if (TYPE == EnumColumnTypes.VARCHAR) QUERY.append(String.format("(%d)", SIZE));
+        if (defaultValue != null) QUERY.append(String.format(" DEFAULT '%s'", defaultValue));
+        return QUERY.toString();
+    }
+
     protected final String constraintSQL() {
         if (foreignKeyReferenceTable == null || foreignKeyReferenceColumn == null) return null;
         return String.format("FOREIGN KEY (%s) REFERENCES %s(%s)%s", ESCAPED_NAME, foreignKeyReferenceTable.escapedName(), foreignKeyReferenceColumn, " ON DELETE " + foreignKeyDeleteAction);

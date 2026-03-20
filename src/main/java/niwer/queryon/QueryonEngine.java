@@ -4,7 +4,6 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.TimeZone;
-import java.util.regex.Pattern;
 
 import niwer.lumen.LumenEngine;
 import niwer.lumen.container.Container;
@@ -14,9 +13,22 @@ public class QueryonEngine {
     private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
 
     public static final Container LOGGER = LumenEngine.registerContainer("QUERYON");
-        private static final Pattern EXPRESSION_PATTERN = Pattern.compile(
-            "(?i)^\\s*.+\\s*(?:\\|\\||[+\\-*/%])\\s*.+\\s*$"
-        );
+
+    /**
+     * Marker type for explicitly passing raw SQL fragments.
+     */
+    public static final class RawExpression {
+        private final String sql;
+
+        private RawExpression(String sql) {
+            this.sql = sql;
+        }
+
+        @Override
+        public String toString() {
+            return sql;
+        }
+    }
 
     /**
      * Convert a Date object to String in yyyy-MM-dd format.
@@ -71,14 +83,24 @@ public class QueryonEngine {
     }
 
     /**
-     * Checks if a value is an expression (contains SQL operators) rather than a literal value.
-     * 
+     * Wraps a raw SQL fragment so it is inserted as-is instead of quoted as a string literal.
+     *
+     * @param sql The raw SQL fragment
+     * @return A marker object recognized as an expression by Queryon
+     */
+    public static RawExpression raw(String sql) {
+        if (sql == null || sql.isBlank()) throw new IllegalArgumentException("Raw SQL expression cannot be null or empty");
+        return new RawExpression(sql);
+    }
+
+    /**
+     * Checks if a value is an explicitly marked SQL expression.
+     *
      * @param value The value to check
-     * @return True if the value is an expression, false if it's a literal value
+     * @return True if the value is a raw SQL expression marker, false otherwise
      */
     public static boolean isExpression(Object value) {
-        if (!(value instanceof String str)) return false;
-        return EXPRESSION_PATTERN.matcher(str).matches();
+        return value instanceof RawExpression;
     }
 
     /**

@@ -46,10 +46,15 @@ class UpdateManagerTest {
 
         final String UPDATE_WHERE_AND_SET_EXPRESSION = UpdateManager.update(DB, TestUserTable.class)
             .set("name", "Alice")
-            .set("age", "age + 5 * 2.5")
+            .set("age", QueryonEngine.raw("age + 5 * 2.5"))
             .where(Expression.of("id").isEqualTo(1))
             .buildQuery();
         assertEquals("UPDATE " + ESCAPED_TABLE_NAME + " SET name = 'Alice', age = age + 5 * 2.5 WHERE id = 1", UPDATE_WHERE_AND_SET_EXPRESSION);
+
+        final String UPDATE_ISO_TIMESTAMP_LITERAL = UpdateManager.update(DB, TestUserTable.class)
+            .set("name", "2026-03-20T19:59:29")
+            .buildQuery();
+        assertEquals("UPDATE " + ESCAPED_TABLE_NAME + " SET name = '2026-03-20T19:59:29'", UPDATE_ISO_TIMESTAMP_LITERAL);
 
         final SelectionManager SELECT_DISTINCT = SelectionManager.selectDistinct(DB, TestUserTable.class)
             .where(Expression.of("age").isGreaterThan(25));

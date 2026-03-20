@@ -164,7 +164,8 @@ public abstract class Table {
             /* If there are missing columns, alter the table */
             if (!MISSING_COLUMNS.isEmpty()) {
                 final StringBuilder QUERY = new StringBuilder("");
-                for (final Column MISSING_COLUMN : MISSING_COLUMNS) QUERY.append("ALTER TABLE ").append(this.name()).append(" ADD COLUMN ").append(MISSING_COLUMN.toString()).append("; ");
+                for (final Column MISSING_COLUMN : MISSING_COLUMNS)
+                    QUERY.append("ALTER TABLE ").append(this.name()).append(" ADD COLUMN ").append(MISSING_COLUMN.toAlterColumnSQL()).append("; ");
                 QueryManager.query(this.DATA_BASE, QUERY.toString());
                 return;
             }

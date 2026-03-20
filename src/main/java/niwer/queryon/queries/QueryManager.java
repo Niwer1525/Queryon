@@ -9,6 +9,7 @@ import java.util.List;
 import niwer.lumen.Console;
 import niwer.queryon.DataBase;
 import niwer.queryon.QueryonEngine;
+import niwer.queryon.QueryonException;
 import niwer.queryon.QueryonLogTypes;
 import niwer.queryon.SQLSerializable;
 
@@ -21,7 +22,7 @@ import niwer.queryon.SQLSerializable;
  */
 public class QueryManager {
 
-    private static Object executeQuery(DataBase db, QueryCallback callback, String sql, boolean shouldReturnResult, Object... params) {
+    private static Object executeQuery(DataBase db, QueryCallback callback, String sql, boolean shouldReturnResult, Object... params) throws QueryonException {
         if (db == null) throw new IllegalArgumentException("Database cannot be null.");
         if (sql == null || sql.isEmpty()) throw new IllegalArgumentException("SQL command cannot be null or empty.");
 
@@ -38,8 +39,10 @@ public class QueryManager {
             STATE.executeUpdate(); // If no result is expected, just execute the update
         } catch (SQLException e) {
             Console.log("SQL error occurred while executing query.", e).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
+            throw new QueryonException("SQL error occurred while executing query.", e);
         } catch (Exception e) {
             Console.log("Error occurred while executing query.", e).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
+            throw new QueryonException("Error occurred while executing query.", e);
         } finally {
             db.disconnect(); // Ensure the connection is closed after the query
         }
@@ -65,9 +68,8 @@ public class QueryManager {
             if (RESULTS.size() == 1) return RESULTS.get(0); // If only one result, return it directly
             return RESULTS; // If multiple results, return the list
         } catch (Exception e) {
-            Console.log("Error while serializing : " + serializable.getName(), e).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
+            throw new QueryonException("Error while serializing: " + serializable.getName(), e);
         }
-        return null;
     }
 
     /**
@@ -77,7 +79,7 @@ public class QueryManager {
      * @param sql The SQL query to perform, with '?' placeholders for parameters
      * @param params The parameters to set in the prepared statement, in the order of the placeholders
      */
-    public static void query(DataBase db, String sql, Object... params) { query(db, null, sql, params); }
+    public static void query(DataBase db, String sql, Object... params) throws QueryonException { query(db, null, sql, params); }
 
     /**
      * Perform an SQL query on the database and get the result as an object of type T.
@@ -93,7 +95,7 @@ public class QueryManager {
      * or null if the query doesn't return anything <br>
      * or if an error occurs
      */
-    public static <T extends SQLSerializable<T>> Object query(DataBase db, Class<T> serializable, String sql, Object... params) {
+    public static <T extends SQLSerializable<T>> Object query(DataBase db, Class<T> serializable, String sql, Object... params) throws QueryonException {
         return executeQuery(db, result -> gatherSerializedResult(result, serializable), sql, serializable != null, params);
     }
 
@@ -108,7 +110,7 @@ public class QueryManager {
      * @return The result of the query as an object of type <code>T</code>,
      * or null if the query doesn't return anything or if an error occurs.
      */
-    public static <T extends SQLSerializable<T>> T querySerializable(DataBase db, Class<T> serializable, String sql, Object... params) {
+    public static <T extends SQLSerializable<T>> T querySerializable(DataBase db, Class<T> serializable, String sql, Object... params) throws QueryonException {
         final Object RESULT = query(db, serializable, sql, params);
         if (RESULT == null) return null;
         if (RESULT instanceof SQLSerializable ser) {
@@ -129,42 +131,30 @@ public class QueryManager {
      * @param params The parameters to set in the prepared statement, in the order of the placeholders
      * 
      * @return The result of the query as a <code>List of T</code><br>
-     * or null if the query doesn't return anything <br>
-     * or if an error occurs
+     * or an empty list if the query doesn't return anything or if an error occurs
      */
-    public static <T extends SQLSerializable<T>> List<T> queryList(DataBase db, Class<T> serializable, String sql, Object... params) {
+    public static <T extends SQLSerializable<T>> List<T> queryList(DataBase db, Class<T> serializable, String sql, Object... params) throws QueryonException {
         final Object RESULT = query(db, serializable, sql, params);
+        if(RESULT == null) return List.of(); // If the query doesn't return anything, return an empty list
         if (RESULT instanceof List<?> lst) {
             @SuppressWarnings("unchecked")
             final List<T> TYPED_LIST = (List<T>) lst; // Java doesn't allow to directly cast List<?> to List<T>, so we need to do it in two steps
             return TYPED_LIST;
         }
-        throw new IllegalStateException("Expected a list of results, but got a single result. Use the query() method instead.");
+        throw new IllegalStateException("An error occurred while retrieving the result list. Expected a List of " + serializable.getName() + ", but got " + (RESULT != null ? RESULT.getClass().getName() : "null"));
     }
 
-    public static boolean queryBoolean(DataBase db, String sql, Object... params) {
-        return (boolean)queryPrimitive(db, Boolean.class, sql, params);
-    }
+    public static boolean queryBoolean(DataBase db, String sql, Object... params) throws QueryonException { return (boolean)queryPrimitive(db, Boolean.class, sql, params); }
 
-    public static int queryInt(DataBase db, String sql, Object... params) {
-        return (int)queryPrimitive(db, Integer.class, sql, params);
-    }
+    public static int queryInt(DataBase db, String sql, Object... params) throws QueryonException { return (int)queryPrimitive(db, Integer.class, sql, params); }
 
-    public static long queryLong(DataBase db, String sql, Object... params) {
-        return (long)queryPrimitive(db, Long.class, sql, params);
-    }
+    public static long queryLong(DataBase db, String sql, Object... params) throws QueryonException { return (long)queryPrimitive(db, Long.class, sql, params); }
 
-    public static double queryDouble(DataBase db, String sql, Object... params) {
-        return (double)queryPrimitive(db, Double.class, sql, params);
-    }
+    public static double queryDouble(DataBase db, String sql, Object... params) throws QueryonException { return (double)queryPrimitive(db, Double.class, sql, params); }
 
-    public static float queryFloat(DataBase db, String sql, Object... params) {
-        return (float)queryPrimitive(db, Float.class, sql, params);
-    }
+    public static float queryFloat(DataBase db, String sql, Object... params) throws QueryonException { return (float)queryPrimitive(db, Float.class, sql, params); }
 
-    public static String queryString(DataBase db, String sql, Object... params) {
-        return (String)queryPrimitive(db, String.class, sql, params);
-    }
+    public static String queryString(DataBase db, String sql, Object... params) throws QueryonException { return (String)queryPrimitive(db, String.class, sql, params); }
 
     /**
      * Perform an SQL query on the database and get the result as a primitive type (e.g. boolean, int, long, double, float, String).
@@ -177,14 +167,14 @@ public class QueryManager {
      * 
      * @return The result of the query as a primitive type, or throws an exception if the query doesn't return a single value
      */
-    public static <T> T queryPrimitive(DataBase db, Class<T> primitiveType, String sql, Object... params) {
+    public static <T> T queryPrimitive(DataBase db, Class<T> primitiveType, String sql, Object... params) throws QueryonException {
         final Object RESULT = executeQuery(db, result -> {
             try {
                 if (result == null) throw new IllegalStateException("Expected a result set, but got null.");
                 if (!result.next()) throw new IllegalStateException("Expected a result, but got an empty result set.");
 
-                Object value = result.getObject(1); // Get the first column of the first row
-                if (value == null) return null; // If the value is null, return null
+                final Object VALUE = result.getObject(1); // Get the first column of the first row
+                if (VALUE == null) return null; // If the value is null, return null
 
                 /* Convert the value to the expected primitive type */
                 if (primitiveType == boolean.class || primitiveType == Boolean.class) return result.getBoolean(1);
@@ -195,12 +185,9 @@ public class QueryManager {
                 if (primitiveType == String.class) return result.getString(1);
 
                 throw new IllegalArgumentException("Unsupported primitive type: " + primitiveType.getName());
-            } catch (SQLException e) {
-                Console.log("SQL error occurred while executing query.", e).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
             } catch (Exception e) {
-                Console.log("Error occurred while executing query.", e).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
+                throw new QueryonException("Error occurred while converting primitive result.", e);
             }
-            return null;
         }, sql, true, params);
 
         if (RESULT == null) throw new IllegalStateException("Expected a single value result, but got null.");
@@ -220,7 +207,7 @@ public class QueryManager {
      * @param params The parameters to set in the prepared statement, in the order of the placeholders
      * @return The number of results returned by the query, or 0 if the query returns no results or if an error occurs
      */
-    public static int queryCountResults(DataBase db, String sql, Object... params) {
+    public static int queryCountResults(DataBase db, String sql, Object... params) throws QueryonException {
         final Object RESULT = executeQuery(db, result -> {
             try {
                 if (result == null) throw new IllegalStateException("Expected a result set, but got null.");
@@ -228,12 +215,9 @@ public class QueryManager {
                 int count = 0;
                 while (result.next()) count++; // Count the number of rows in the result set
                 return count; // Return the count of rows
-            } catch (SQLException e) {
-                Console.log("SQL error occurred while executing query.", e).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
             } catch (Exception e) {
-                Console.log("Error occurred while executing query.", e).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
+                throw new QueryonException("Error occurred while counting query results.", e);
             }
-            return false;
         }, sql, true, params);
 
         if (RESULT instanceof Integer count) return count;
@@ -248,7 +232,5 @@ public class QueryManager {
      * @param params The parameters to set in the prepared statement, in the order of the placeholders
      * @return true if the query returns at least one result, false if it returns no results or if an error occurs
      */
-    public static boolean queryHasResult(DataBase db, String sql, Object... params) {
-        return queryCountResults(db, sql, params) > 0;
-    }
+    public static boolean queryHasResult(DataBase db, String sql, Object... params) throws QueryonException { return queryCountResults(db, sql, params) > 0; }
 }

@@ -13,10 +13,11 @@ import org.junit.jupiter.api.io.TempDir;
 
 import niwer.queryon.DataBase;
 import niwer.queryon.QueryonEngineTest;
+import niwer.queryon.QueryonException;
 import niwer.queryon.TestUserTable.TestUser;
 
 class QueryManagerTest {
-    public static void addUsers(DataBase DB) {
+    public static void addUsers(DataBase DB) throws QueryonException {
         QueryManager.query(DB, """
             INSERT INTO test_table (id, name, age) VALUES (?, ?, ?)
         """, 1, "Alice", 30);
@@ -34,7 +35,7 @@ class QueryManagerTest {
         """, 4, "Chloée", 20);
     }
 
-    @Test void testNullParameters(@TempDir File tempDir) {
+    @Test void testNullParameters(@TempDir File tempDir) throws QueryonException {
         final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         final Object[] EMPTY_PARAMS = new Object[]{};
         assertThrows(IllegalArgumentException.class, () -> QueryManager.query(null, null, "SELECT * FROM test_table", EMPTY_PARAMS));
@@ -42,14 +43,14 @@ class QueryManagerTest {
         assertThrows(IllegalArgumentException.class, () -> QueryManager.query(DB, null, "", EMPTY_PARAMS));
     }
 
-    @Test void testNoResultQueryNullParameters(@TempDir File tempDir) {
+    @Test void testNoResultQueryNullParameters(@TempDir File tempDir) throws QueryonException {
         final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         assertThrows(IllegalArgumentException.class, () -> QueryManager.query(null, "INSERT INTO test_table (id, name, age) VALUES (?, ?, ?)", 1, "Alice", 30));
         assertThrows(IllegalArgumentException.class, () -> QueryManager.query(DB, (String)null, "INSERT INTO test_table (id, name, age) VALUES (?, ?, ?)", 1, "Alice", 30));
         assertThrows(IllegalArgumentException.class, () -> QueryManager.query(DB, "", "", 1, "Alice", 30));
     }
 
-    @Test void testNoResultQuery(@TempDir File tempDir) {
+    @Test void testNoResultQuery(@TempDir File tempDir) throws QueryonException {
         assertDoesNotThrow(() -> {
             final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
             QueryManager.query(DB, """
@@ -58,7 +59,7 @@ class QueryManagerTest {
         });
     }
 
-    @Test void testSingleResultSerializableQuery(@TempDir File tempDir) {
+    @Test void testSingleResultSerializableQuery(@TempDir File tempDir) throws QueryonException {
         final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         addUsers(DB);
 
@@ -69,7 +70,7 @@ class QueryManagerTest {
         assertInstanceOf(TestUser.class, RESULT);
     }
 
-    @Test void testSingleResultQuery(@TempDir File tempDir) {
+    @Test void testSingleResultQuery(@TempDir File tempDir) throws QueryonException {
         final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         addUsers(DB);
 
@@ -80,7 +81,7 @@ class QueryManagerTest {
         assertInstanceOf(TestUser.class, RESULT);
     }
 
-    @Test void testMultipleResultQuery(@TempDir File tempDir) {
+    @Test void testMultipleResultQuery(@TempDir File tempDir) throws QueryonException {
         final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         addUsers(DB);
 
@@ -91,7 +92,7 @@ class QueryManagerTest {
         assertInstanceOf(List.class, RESULT);
     }
 
-    @Test void testSingleResultQueryList(@TempDir File tempDir) {
+    @Test void testSingleResultQueryList(@TempDir File tempDir) throws QueryonException {
         final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         addUsers(DB);
 
@@ -102,7 +103,7 @@ class QueryManagerTest {
         });
     }
 
-    @Test void testExecuteSQLCommandForPrimitive(@TempDir File tempDir) {
+    @Test void testExecuteSQLCommandForPrimitive(@TempDir File tempDir) throws QueryonException {
         final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         addUsers(DB);
 
@@ -113,7 +114,7 @@ class QueryManagerTest {
         assertInstanceOf(Integer.class, RESULT);
     }
 
-    @Test void testQueryPrimitiveWithNoResult(@TempDir File tempDir) {
+    @Test void testQueryPrimitiveWithNoResult(@TempDir File tempDir) throws QueryonException {
         final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         addUsers(DB);
 
@@ -125,7 +126,7 @@ class QueryManagerTest {
         assert(RESULT.equals(0));
     }
 
-    @Test void testPrimitiveFunctions(@TempDir File tempDir) {
+    @Test void testPrimitiveFunctions(@TempDir File tempDir) throws QueryonException {
         final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         addUsers(DB);
 
