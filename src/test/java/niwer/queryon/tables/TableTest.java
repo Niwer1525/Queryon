@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.File;
+import java.util.Date;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -166,6 +167,9 @@ class TableTest {
 
         @IColumnField()
         private TestEnum testEnum;
+
+        @IColumnField()
+        private Date testDate = new Date();
     }
 
     private static class TestAnnotatedClassIllegalOne extends SQLSerializable<TestAnnotatedClassIllegalOne> {

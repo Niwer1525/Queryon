@@ -40,7 +40,7 @@ public class Column {
         if (db == null) throw new IllegalArgumentException("DataBase instance cannot be null.");
 
         this.DATA_BASE = db;
-        this.NAME = annotation.name().isEmpty() ? field.getName() : annotation.name();
+        this.NAME = QueryonEngine.escapeString(annotation.name().isEmpty() ? field.getName() : annotation.name());
         this.SIZE = annotation.charLimit();
         this.TYPE = EnumColumnTypes.fromJava(field);
         if (this.TYPE == EnumColumnTypes.ENUM) this.ENUM_VALUES_NAMES = enumToStrings(field.getType().asSubclass(Enum.class));
@@ -54,7 +54,7 @@ public class Column {
         if (annotation.autoIncrement()) autoIncrement();
         if (annotation.foreignKey().table() != Table.class) foreignKey(annotation.foreignKey().table(), annotation.foreignKey().column(), annotation.foreignKey().onDelete());
         
-        final Object DEFAULT_VALUE = SQLSerializable.getDataFromField(field);
+        final Object DEFAULT_VALUE = SQLSerializable.defaultDataFromField(field);
         if (DEFAULT_VALUE != null) defaultValue(DEFAULT_VALUE);
     }
 
@@ -70,7 +70,7 @@ public class Column {
         if (type == EnumColumnTypes.ENUM && enumType == null) throw new IllegalArgumentException("ENUM column must have a non-null enum type.");
 
         this.DATA_BASE = db;
-        this.NAME = name;
+        this.NAME = QueryonEngine.escapeString(name);
         this.TYPE = type;
         this.SIZE = size;
         if (type == EnumColumnTypes.ENUM) this.ENUM_VALUES_NAMES = Arrays.stream(enumType.getEnumConstants()).map(Enum::name).toArray(String[]::new);

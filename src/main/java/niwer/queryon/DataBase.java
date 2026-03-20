@@ -103,7 +103,7 @@ public class DataBase {
         try {
             final Table TABLE_INSTANCE = table.getDeclaredConstructor(DataBase.class).newInstance(this);
             REGISTERED_TABLES.add(TABLE_INSTANCE);
-            Console.log("Registering SQL table : " + TABLE_INSTANCE.name()).type(QueryonLogTypes.SQL).send();
+            Console.log("Registering SQL table : " + TABLE_INSTANCE.name()).type(QueryonLogTypes.SQL).container(QueryonEngine.LOGGER).send();
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
             Console.log(e).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
         } finally {

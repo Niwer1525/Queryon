@@ -47,6 +47,11 @@ class InsertionManagerTest {
             )
             .buildQuery();
         assertEquals("INSERT OR IGNORE INTO " + ESCAPED_TABLE_NAME + " (id, name, age) VALUES (1, 'Alice', 30) ON CONFLICT DO UPDATE SET name = 'Alice Updated' WHERE id = 1", INSERT_DO_UPDATE);
+
+        final TestUser USER_OBJECT = new TestUser(211255, "Romain", 15);
+        final String INSERT_FROM_OBJECT = InsertionManager.insert(DB, TestUserTable.class, USER_OBJECT)
+            .buildQuery();
+        assertEquals("INSERT INTO " + ESCAPED_TABLE_NAME + " (id, name, age) VALUES (211255, 'Romain', 15)", INSERT_FROM_OBJECT);
     }
 
     @Test void testInsertionInvalidValues(@TempDir File tempDir) {

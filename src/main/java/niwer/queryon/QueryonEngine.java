@@ -90,7 +90,6 @@ public class QueryonEngine {
      * @return The escaped string
      */
     public static String escapeString(String str) {
-        // return str.replace("\"", "\"");
         return "\"" + str + "\"";
     }
 }

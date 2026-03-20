@@ -5,6 +5,7 @@ import java.util.List;
 
 import niwer.queryon.DataBase;
 import niwer.queryon.QueryonEngine;
+import niwer.queryon.SQLSerializable;
 import niwer.queryon.queries.QueryManager;
 import niwer.queryon.tables.Table;
 
@@ -26,6 +27,30 @@ public class InsertionManager extends QueryExecutor {
         super(db, table);
         this.COLUMNS = columns;
         this.IGNORE_CONFLICTS = ignore;
+    }
+
+    /**
+     * Starts an insertion query for the specified table and columns, using values from a SQLSerializable object.
+     * 
+     * @param db The database to execute the query on
+     * @param table The table to insert into
+     * @param object The SQLSerializable object to insert, which provides the column names and values for the insertion
+     * @return An InsertionManager instance to build and execute the query
+     */
+    public final static InsertionManager insert(DataBase db, Class<? extends Table> table, SQLSerializable<?> object) {
+        return new InsertionManager(db, table, false, object.columnNames()).row(object.valuesFromObject());
+    }
+
+    /**
+     * Starts an insertion query for the specified table and columns, with the option to ignore conflicts, using values from a SQLSerializable object.
+     * 
+     * @param db The database to execute the query on
+     * @param table The table to insert into
+     * @param object The SQLSerializable object to insert, which provides the column names and values for the insertion
+     * @return An InsertionManager instance to build and execute the query
+     */
+    public final static InsertionManager insertOrIgnore(DataBase db, Class<? extends Table> table, SQLSerializable<?> object) {
+        return new InsertionManager(db, table, true, object.columnNames()).row(object.valuesFromObject());
     }
 
     /**

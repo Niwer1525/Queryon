@@ -5,6 +5,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import niwer.queryon.tables.EnumForeginKeyAction;
 import niwer.queryon.tables.Table;
 
 /**
@@ -27,6 +28,8 @@ public @interface IColumnField {
     boolean unique() default false; // Optional: specify if the column should be UNIQUE
 
     boolean primaryKey() default false; // Optional: specify if the column should be a PRIMARY KEY
+
+    EnumForeginKeyAction onDelete() default EnumForeginKeyAction.NO_ACTION; // Optional: specify the action to take on delete for foreign keys (default is NO ACTION)
 
     IForeignKey foreignKey() default @IForeignKey(table = Table.class, column = ""); // Optional: specify a foreign key relationship (default is no foreign key)
 }

@@ -18,7 +18,7 @@ public enum EnumColumnTypes {
     REAL("REAL", Double.class, double.class, Float.class, float.class),
     BOOLEAN("BOOLEAN", Boolean.class, boolean.class),
     DATE("DATE", java.sql.Date.class),
-    DATE_TIME("DATETIME", java.sql.Timestamp.class);
+    DATE_TIME("DATETIME", java.sql.Timestamp.class, java.util.Date.class);
 
     private final String sqlType;
     private final Class<?>[] javaTypes;
@@ -38,11 +38,19 @@ public enum EnumColumnTypes {
      * @throws IllegalArgumentException if the field's type is not supported
      */
     public final static EnumColumnTypes fromJava(Field field) {
+        return fromJava(field, field.isAnnotationPresent(IColumnField.class) ? field.getAnnotation(IColumnField.class) : null);
+    }
+
+    /**
+     * Gets the corresponding EnumColumnTypes for a given Java field based on its type and column annotation.
+     * 
+     * @param field The Java field to determine the column type for
+     * @param annotation The column annotation that may contain additional information (like charLimit for VARCHAR)
+     * @return The corresponding EnumColumnTypes for the field's type and annotation
+     */
+    public final static EnumColumnTypes fromJava(Field field, IColumnField annotation) {
         final Class<?> FIELD_TYPE = field.getType();
-        if (field.isAnnotationPresent(IColumnField.class)) {
-            final IColumnField ANNOTATION = field.getAnnotation(IColumnField.class);
-            if (ANNOTATION.charLimit() > 0 && field.getType() == String.class) return VARCHAR; // If charLimit is specified, treat it as VARCHAR
-        }
+        if (annotation != null && annotation.charLimit() > 0 && FIELD_TYPE == String.class) return VARCHAR; // If charLimit is specified, treat it as VARCHAR
         return fromJava(FIELD_TYPE);
     }
 

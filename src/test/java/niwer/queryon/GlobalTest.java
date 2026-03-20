@@ -42,9 +42,9 @@ public class GlobalTest {
                 .execute();
 
             /* Insert test foods */
-            InsertionManager.insert(DB, TestFoodTable.class, "id", "name", "calories")
-                .row(1, "Apple", 1.5)
-                .rows(InsertionManager.of(2, "Banana", 2.0), InsertionManager.of(3, "Cherry", 3.0))
+            InsertionManager.insert(DB, TestFoodTable.class, "id", "name", "calories", "user_identifier")
+                .row(1, "Apple", 1.5, 1)
+                .rows(InsertionManager.of(2, "Banana", 2.0, 2), InsertionManager.of(3, "Cherry", 3.0, 3))
                 .execute();
         }
 
@@ -91,7 +91,7 @@ public class GlobalTest {
             /* Prepare a selection query to check existance of the new user */
             final TestUser INSERTED_USER = SelectionManager.select(DB, TestUserTable.class)
                 .where(Expression.of("name").isEqualTo("Lou")).executeSerializable(TestUser.class);
-            Console.log(INSERTED_USER).send();
+            Console.log(INSERTED_USER).container(QueryonEngine.LOGGER).send();
         
             /* Update the new user's name to Louis */
             UpdateManager.update(DB, TestUserTable.class)
@@ -102,7 +102,7 @@ public class GlobalTest {
             /* Check that the user's name has been updated */
             final TestUser UPDATED_USER = SelectionManager.select(DB, TestUserTable.class)
                 .where(Expression.of("id").isEqualTo(255521)).executeSerializable(TestUser.class);
-            Console.log(UPDATED_USER).send();
+            Console.log(UPDATED_USER).container(QueryonEngine.LOGGER).send();
         }
     }
 }
