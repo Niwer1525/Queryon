@@ -19,7 +19,7 @@ import niwer.queryon.tables.api.IColumnField;
 public class Column {
     private static final String CURRENT_TIMESTAMP = "CURRENT_TIMESTAMP";
 
-    protected final String NAME;
+    protected final String ESCAPED_NAME;
     private final DataBase DATA_BASE;
     private final EnumColumnTypes TYPE;
     private final int SIZE; // Only used for VARCHAR, ignored otherwise
@@ -40,14 +40,14 @@ public class Column {
         if (db == null) throw new IllegalArgumentException("DataBase instance cannot be null.");
 
         this.DATA_BASE = db;
-        this.NAME = QueryonEngine.escapeString(annotation.name().isEmpty() ? field.getName() : annotation.name());
+        this.ESCAPED_NAME = QueryonEngine.escapeString(annotation.name().isEmpty() ? field.getName() : annotation.name());
         this.SIZE = annotation.charLimit();
         this.TYPE = EnumColumnTypes.fromJava(field);
         if (this.TYPE == EnumColumnTypes.ENUM) this.ENUM_VALUES_NAMES = enumToStrings(field.getType().asSubclass(Enum.class));
         else this.ENUM_VALUES_NAMES = null;
         
-        if (annotation.charLimit() > 0 && TYPE != EnumColumnTypes.VARCHAR) throw new IllegalArgumentException("charLimit is only applicable to VARCHAR columns for column " + NAME);
-        if (annotation.autoIncrement() && TYPE != EnumColumnTypes.INT) throw new IllegalArgumentException("autoIncrement is only applicable to INT columns for column " + NAME);
+        if (annotation.charLimit() > 0 && TYPE != EnumColumnTypes.VARCHAR) throw new IllegalArgumentException("charLimit is only applicable to VARCHAR columns for column " + ESCAPED_NAME);
+        if (annotation.autoIncrement() && TYPE != EnumColumnTypes.INT) throw new IllegalArgumentException("autoIncrement is only applicable to INT columns for column " + ESCAPED_NAME);
         if (annotation.notNull()) notNull();
         if (annotation.unique()) unique();
         if (annotation.primaryKey()) primaryKey(); // This will also set notNull and unique to true
@@ -70,7 +70,7 @@ public class Column {
         if (type == EnumColumnTypes.ENUM && enumType == null) throw new IllegalArgumentException("ENUM column must have a non-null enum type.");
 
         this.DATA_BASE = db;
-        this.NAME = QueryonEngine.escapeString(name);
+        this.ESCAPED_NAME = QueryonEngine.escapeString(name);
         this.TYPE = type;
         this.SIZE = size;
         if (type == EnumColumnTypes.ENUM) this.ENUM_VALUES_NAMES = Arrays.stream(enumType.getEnumConstants()).map(Enum::name).toArray(String[]::new);
@@ -83,7 +83,7 @@ public class Column {
     private final void handleDateStringDefault(String string, String regex, String typeName) {
         if (string.equalsIgnoreCase(CURRENT_TIMESTAMP)) this.defaultValue = CURRENT_TIMESTAMP;
         else if (string.matches(regex)) this.defaultValue = string;
-        else throw new IllegalArgumentException("Default value string does not match expected format for " + typeName + " column for column " + NAME);
+        else throw new IllegalArgumentException("Default value string does not match expected format for " + typeName + " column for column " + ESCAPED_NAME);
     }
     
     /**
@@ -157,7 +157,7 @@ public class Column {
      */
     public final Column defaultValue(Object value, Expression expression) {
         if (this.TYPE == EnumColumnTypes.ENUM)
-            throw new IllegalArgumentException("Default value expressions are not supported for ENUM columns for column " + NAME);
+            throw new IllegalArgumentException("Default value expressions are not supported for ENUM columns for column " + ESCAPED_NAME);
         
         this.defaultValueExpression = expression;
         return defaultValue(value);
@@ -178,14 +178,14 @@ public class Column {
         switch (this.TYPE) {
             case ENUM -> {
                 if (!(value instanceof Enum))
-                    throw new IllegalArgumentException("Default value type does not match column type for column " + NAME);
+                    throw new IllegalArgumentException("Default value type does not match column type for column " + ESCAPED_NAME);
                 this.defaultValue = value;
             }
             case REAL -> this.defaultValue = (Double) value;
             case INT -> this.defaultValue = (Integer) value;
             case VARCHAR -> {
                 final String STRING_VALUE = value.toString();
-                if (STRING_VALUE.length() > SIZE) throw new IllegalArgumentException("Default value length exceeds VARCHAR column size for column " + NAME);
+                if (STRING_VALUE.length() > SIZE) throw new IllegalArgumentException("Default value length exceeds VARCHAR column size for column " + ESCAPED_NAME);
                 this.defaultValue = STRING_VALUE;
             }
             case TEXT -> this.defaultValue = value.toString();
@@ -193,12 +193,12 @@ public class Column {
             case DATE -> {
                 if (value instanceof Date date) this.defaultValue = QueryonEngine.dateToSQL(date); // Dates are stored as strings in the format "YYYY-MM-DD"
                 else if (value instanceof String string) handleDateStringDefault(string, "\\d{4}-\\d{2}-\\d{2}", "DATE");
-                else throw new IllegalArgumentException("Default value type does not match column type for column " + NAME);
+                else throw new IllegalArgumentException("Default value type does not match column type for column " + ESCAPED_NAME);
             }
             case DATE_TIME -> {
                 if (value instanceof Date date) this.defaultValue = QueryonEngine.dateTimeToSQL(date); // Datetimes are stored as strings in the format "YYYY-MM-DD HH:MM:SS"
                 else if (value instanceof String string) handleDateStringDefault(string, "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}", "DATE_TIME");
-                else throw new IllegalArgumentException("Default value type does not match column type for column " + NAME);
+                else throw new IllegalArgumentException("Default value type does not match column type for column " + ESCAPED_NAME);
             }
         }
         return this;
@@ -206,7 +206,7 @@ public class Column {
 
     @Override
     public String toString() {
-        final StringBuilder QUERY = new StringBuilder(NAME + " " + TYPE.sql());
+        final StringBuilder QUERY = new StringBuilder(ESCAPED_NAME + " " + TYPE.sql());
         if (TYPE == EnumColumnTypes.VARCHAR) QUERY.append(String.format("(%d)", SIZE));
         if (autoIncrement) QUERY.append(" AUTO_INCREMENT");
         if (primaryKey) QUERY.append(" PRIMARY KEY");
@@ -214,7 +214,7 @@ public class Column {
         if (unique) QUERY.append(" UNIQUE");
         if (defaultValue != null) {
             QUERY.append(String.format(" DEFAULT '%s'", defaultValue));
-            if (TYPE == EnumColumnTypes.ENUM) QUERY.append(" CHECK (" + NAME + " IN ('" + String.join("', '", ENUM_VALUES_NAMES) + "'))"); // For ENUM columns, we also add a CHECK constraint to ensure that the value is one of the defined enum values
+            if (TYPE == EnumColumnTypes.ENUM) QUERY.append(" CHECK (" + ESCAPED_NAME + " IN ('" + String.join("', '", ENUM_VALUES_NAMES) + "'))"); // For ENUM columns, we also add a CHECK constraint to ensure that the value is one of the defined enum values
             if (defaultValueExpression != null) QUERY.append(" CHECK (" + defaultValueExpression + ")");
         }
         return QUERY.toString();
@@ -222,8 +222,8 @@ public class Column {
 
     protected final String constraintSQL() {
         if (foreignKeyReferenceTable == null || foreignKeyReferenceColumn == null) return null;
-        return String.format("FOREIGN KEY (%s) REFERENCES %s(%s)%s", NAME, foreignKeyReferenceTable.escapedName(), foreignKeyReferenceColumn, " ON DELETE " + foreignKeyDeleteAction);
+        return String.format("FOREIGN KEY (%s) REFERENCES %s(%s)%s", ESCAPED_NAME, foreignKeyReferenceTable.escapedName(), foreignKeyReferenceColumn, " ON DELETE " + foreignKeyDeleteAction);
     }
 
-    @Override public int hashCode() { return NAME.hashCode(); }
+    @Override public int hashCode() { return ESCAPED_NAME.hashCode(); }
 }

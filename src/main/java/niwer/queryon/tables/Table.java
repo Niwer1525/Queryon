@@ -150,11 +150,7 @@ public abstract class Table {
     }
 
     private final boolean columnExists(Column column) {
-        return columnExists(column.NAME);
-    }
-
-    private final boolean columnExists(String columnName) {
-        return QueryManager.queryInt(DATA_BASE, "SELECT COUNT(*) FROM pragma_table_info('" + this.name() + "') WHERE name = '" + columnName + "';") > 0;
+        return QueryManager.queryInt(DATA_BASE, "SELECT COUNT(*) FROM pragma_table_info(" + this.escapedName() + ") WHERE name = " + column.ESCAPED_NAME + ";") > 0;
     }
 
     /**
