@@ -75,13 +75,21 @@ DATA_BASE.reconnect();
 ```
 But keep in mind that all the queries will automatically connect to the database if it's not already connected, so you don't need to worry about that.
 
-The DataBase class also provides few otherfunctions :
+The DataBase class also provides few other functions :
 ```java
 DATA_BASE#tabExist(Table table); // Check if a table exist in the database
 DATA_BASE#tabExist(Class<? extends Table> tableClass); // Check if a table exist in the database
 DATA_BASE#dropTable(Class<? extends Table> tableClass); // Drop a table from the database
 DATA_BASE#getTable(Class<? extends Table> tableClass); // Get a table from the database
 ```
+
+You can also change they way queries are executed.
+```java
+DATA_BASE.setConnectionMode(EnumConnectionMode.PERSISTENT); // One connection for all queries.
+
+DATA_BASE.setConnectionMode(EnumConnectionMode.PER_QUERY); // Each query will create a new connection and close it after the execution.
+```
+Note the default is PERSISTENT, which means that all queries will use the same connection.
 
 ### Expressions
 Expression is the base class for all expressions in Queryon. It can be used to build complex expressions using a fluent API. For example, you can build a simple expression like this:

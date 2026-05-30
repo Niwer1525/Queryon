@@ -1,6 +1,7 @@
 package niwer.queryon.queries;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -57,6 +58,19 @@ class QueryManagerTest {
                 INSERT INTO test_table (id, name, age) VALUES (?, ?, ?)
             """, 0, "Vanessa", 35);
         });
+    }
+
+    @Test void testPerQueryConnectionMode(@TempDir File tempDir) throws QueryonException {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir).setConnectionMode(DataBase.ConnectionMode.PER_QUERY);
+
+        addUsers(DB);
+
+        final Object RESULT = QueryManager.queryInt(DB, """
+            SELECT COUNT(*) FROM test_table
+        """);
+        assertNotNull(RESULT);
+        assertInstanceOf(Integer.class, RESULT);
+        assertFalse(DB.isConnected(), "Per-query mode should not keep a shared connection open");
     }
 
     @Test void testSingleResultSerializableQuery(@TempDir File tempDir) throws QueryonException {

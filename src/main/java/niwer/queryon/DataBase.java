@@ -21,9 +21,15 @@ import niwer.queryon.tables.Table;
  */
 public class DataBase {
 
+    public static enum ConnectionMode {
+        PERSISTENT,
+        PER_QUERY
+    }
+
     private final String DATA_BASE_PATH;
     private final Set<Table> REGISTERED_TABLES = new HashSet<>();
     private Connection sqlConnection = null;
+    private ConnectionMode connectionMode = ConnectionMode.PERSISTENT;
     
     /**
      * Create a new DataBase
@@ -43,15 +49,38 @@ public class DataBase {
         return sqlConnection;
     }
 
+    public boolean isConnected() {
+        try {
+            return this.sqlConnection != null && !this.sqlConnection.isClosed();
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    public ConnectionMode connectionMode() {
+        return this.connectionMode;
+    }
+
+    public DataBase setConnectionMode(ConnectionMode connectionMode) {
+        if (connectionMode == null) throw new IllegalArgumentException("Connection mode cannot be null");
+        this.connectionMode = connectionMode;
+        if (connectionMode == ConnectionMode.PER_QUERY) this.disconnect();
+        return this;
+    }
+
+    public Connection openConnection() throws SQLException {
+        return DriverManager.getConnection(this.DATA_BASE_PATH);
+    }
+
     /**
      * Reconnect to database if connection is null.
      * 
      * @return true if reconnection was needed, false otherwise
      */
     public boolean reconnect() {
-        if (this.sqlConnection == null) {
+        if (!this.isConnected()) {
             connect();
-            return this.sqlConnection != null;
+            return this.isConnected();
         }
         return false;
     }
@@ -79,7 +108,8 @@ public class DataBase {
      */
     public DataBase connect() {
         try {
-            this.sqlConnection = DriverManager.getConnection(this.DATA_BASE_PATH);
+            if (this.isConnected()) return this;
+            this.sqlConnection = this.openConnection();
         } catch (SQLException e) {
             Console.log("Failed to connect to database: " + e.getMessage()).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
         }
@@ -93,8 +123,6 @@ public class DataBase {
      * @return this Database instance for chaining
      */
     public DataBase registerTable(Class<? extends Table> table) {
-        this.reconnect(); // Ensure the connection is active before executing the query
-
         /* Ensure the table is not already registered */
         if(REGISTERED_TABLES.stream().anyMatch(t -> t.getClass().equals(table)))
             throw new IllegalArgumentException("Table " + table.getSimpleName() + " is already registered");
@@ -106,8 +134,6 @@ public class DataBase {
             Console.log("Registering SQL table : " + TABLE_INSTANCE.name()).type(QueryonLogTypes.SQL).container(QueryonEngine.LOGGER).send();
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e) {
             Console.log(e).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
-        } finally {
-            this.disconnect(); // Ensure the connection is closed after the operation
         }
 
         return this;
@@ -134,13 +160,10 @@ public class DataBase {
      * @return true if the table is registered in the database, false otherwise
      */
     public boolean tabExists(Table table) {
-        this.reconnect(); // Ensure the connection is active before executing the query
-        try (final var STATEMENT = this.sqlConnection.prepareStatement("SELECT name FROM sqlite_master WHERE type='table' AND name=" + table.escapedName() + ";")) {
-            return STATEMENT.executeQuery().next(); // If the query returns a result, the table exists
-        } catch (SQLException e) {
+        try {
+            return QueryManager.queryHasResult(this, "SELECT 1 FROM sqlite_master WHERE type='table' AND name = ?;", table.name());
+        } catch (QueryonException e) {
             Console.log("Failed to check if table exists: " + e.getMessage()).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
-        } finally {
-            this.disconnect(); // Ensure the connection is closed after the operation
         }
         return false;
     }

@@ -3,6 +3,7 @@ package niwer.queryon.queries;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,17 +27,28 @@ public class QueryManager {
         if (db == null) throw new IllegalArgumentException("Database cannot be null.");
         if (sql == null || sql.isEmpty()) throw new IllegalArgumentException("SQL command cannot be null or empty.");
 
-        db.reconnect(); // Ensure the connection is active before executing the query
-        try(final PreparedStatement STATE = db.sqlConnection().prepareStatement(sql)) {
+        final boolean TEMPORARY_CONNECTION = db.connectionMode() == DataBase.ConnectionMode.PER_QUERY;
+        Connection CONNECTION = null;
+        try {
+            if (TEMPORARY_CONNECTION) CONNECTION = db.openConnection();
+            else {
+                db.reconnect(); // Ensure the connection is active before executing the query
+                CONNECTION = db.sqlConnection();
+            }
 
-            /* Pass all the objects to the prepared statement. This will replace '?'' placeholders */
-            for (int i = 0; i < params.length; i++) STATE.setObject(i + 1, params[i]);
+            if (CONNECTION == null) throw new SQLException("Failed to establish a SQL connection.");
 
-            /* Execute the query and handle the result */
-            if(shouldReturnResult)
-                return callback.execute(STATE.executeQuery()); // Execute the query and pass the result to the callback.
+            try(final PreparedStatement STATE = CONNECTION.prepareStatement(sql)) {
 
-            STATE.executeUpdate(); // If no result is expected, just execute the update
+                /* Pass all the objects to the prepared statement. This will replace '?' placeholders */
+                for (int i = 0; i < params.length; i++) STATE.setObject(i + 1, params[i]);
+
+                /* Execute the query and handle the result */
+                if(shouldReturnResult)
+                    return callback.execute(STATE.executeQuery()); // Execute the query and pass the result to the callback.
+
+                STATE.executeUpdate(); // If no result is expected, just execute the update
+            }
         } catch (SQLException e) {
             Console.log("SQL error occurred while executing query.", e).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
             throw new QueryonException("SQL error occurred while executing query.", e);
@@ -44,7 +56,13 @@ public class QueryManager {
             Console.log("Error occurred while executing query.", e).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
             throw new QueryonException("Error occurred while executing query.", e);
         } finally {
-            db.disconnect(); // Ensure the connection is closed after the query
+            if (TEMPORARY_CONNECTION && CONNECTION != null) {
+                try {
+                    CONNECTION.close();
+                } catch (SQLException e) {
+                    Console.log("Failed to disconnect from database: " + e.getMessage()).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
+                }
+            }
         }
         return null;
     }

@@ -1,6 +1,7 @@
 package niwer.queryon.tables;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.File;
@@ -80,6 +81,13 @@ class ColumnTest {
                 .unique()
                 .defaultValue(true, Expression.of("test_column").isEqualTo(true));
         });
+    }
+
+    @Test void testBooleanDefaultValueIsNotQuoted(@TempDir File tempDir) {
+        final Column COLUMN = new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.BOOLEAN, 0, null)
+            .defaultValue(false, Expression.of("test_column").isEqualTo(false));
+
+        assertEquals("\"test_column\" BOOLEAN DEFAULT false CHECK (test_column = false)", COLUMN.toString());
     }
 
     @Test void testColumnCreationDate(@TempDir File tempDir) {

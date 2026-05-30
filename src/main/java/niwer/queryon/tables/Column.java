@@ -204,6 +204,14 @@ public class Column {
         return this;
     }
 
+    private String defaultValueSQL() {
+        if (defaultValue == null) return null;
+        return switch (TYPE) {
+            case BOOLEAN, INT, REAL -> String.valueOf(defaultValue);
+            case ENUM, VARCHAR, TEXT, DATE, DATE_TIME -> String.format("'%s'", defaultValue);
+        };
+    }
+
     @Override
     public String toString() {
         final StringBuilder QUERY = new StringBuilder(ESCAPED_NAME + " " + TYPE.sql());
@@ -212,8 +220,9 @@ public class Column {
         if (primaryKey) QUERY.append(" PRIMARY KEY");
         if (notNull) QUERY.append(" NOT NULL");
         if (unique) QUERY.append(" UNIQUE");
-        if (defaultValue != null) {
-            QUERY.append(String.format(" DEFAULT '%s'", defaultValue));
+        final String DEFAULT_VALUE_SQL = defaultValueSQL();
+        if (DEFAULT_VALUE_SQL != null) {
+            QUERY.append(" DEFAULT ").append(DEFAULT_VALUE_SQL);
             if (TYPE == EnumColumnTypes.ENUM) QUERY.append(" CHECK (" + ESCAPED_NAME + " IN ('" + String.join("', '", ENUM_VALUES_NAMES) + "'))"); // For ENUM columns, we also add a CHECK constraint to ensure that the value is one of the defined enum values
             if (defaultValueExpression != null) QUERY.append(" CHECK (" + defaultValueExpression + ")");
         }
@@ -227,7 +236,8 @@ public class Column {
     protected final String toAlterColumnSQL() {
         final StringBuilder QUERY = new StringBuilder(ESCAPED_NAME + " " + TYPE.sql());
         if (TYPE == EnumColumnTypes.VARCHAR) QUERY.append(String.format("(%d)", SIZE));
-        if (defaultValue != null) QUERY.append(String.format(" DEFAULT '%s'", defaultValue));
+        final String DEFAULT_VALUE_SQL = defaultValueSQL();
+        if (DEFAULT_VALUE_SQL != null) QUERY.append(" DEFAULT ").append(DEFAULT_VALUE_SQL);
         return QUERY.toString();
     }
 
