@@ -18,5 +18,11 @@ public abstract class QueryExecutor {
         this.TABLE = dataBase.getTable(tableClas);
     }
     
+    @Override
+    public String toString() {
+        final String REFERENCE = this.getClass().getName() + "@" + Integer.toHexString(this.hashCode());
+        return String.format("%s : %s", REFERENCE, buildQuery());
+    }
+
     protected abstract String buildQuery();
 }
