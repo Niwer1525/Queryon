@@ -1,9 +1,10 @@
 package niwer.queryon.queries;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -229,9 +230,21 @@ public class QueryManager {
         final Object RESULT = executeQuery(db, result -> {
             try {
                 if (result == null) throw new IllegalStateException("Expected a result set, but got null.");
-               
                 int count = 0;
-                while (result.next()) count++; // Count the number of rows in the result set
+
+                /* Get metadata about the columns returned */
+                final ResultSetMetaData META_DATA = result.getMetaData();
+                final int COLUMN_COUNT = META_DATA.getColumnCount();
+                
+                /* Determine if this is a SELECT COUNT(...) query */
+                if (COLUMN_COUNT == 1) {
+                    final String FIRST_COLUMN_NAME = META_DATA.getColumnName(1).toLowerCase();
+                    if (FIRST_COLUMN_NAME.contains("count") || FIRST_COLUMN_NAME.contains("total"))
+                        return result.next() ? result.getInt(1) : 0;
+                }
+
+                /* Fallback: Count rows manually for standard SELECT * queries */
+                while (result.next()) count++;
                 return count; // Return the count of rows
             } catch (Exception e) {
                 throw new QueryonException("Error occurred while counting query results.", e);
