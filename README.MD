@@ -160,7 +160,7 @@ These annotations are used to define the mapping between Java fields and SQL col
 @IColumnField(
     name = "id",
     charLimit = 255, // Only for string types, specify a character limit for VARCHAR columns
-    autoIncrement = true, // Only for integer types, specify if the column should be AUTO_INCREMENT
+    autoIncrement = true, // Only for integer types, specify if the column should be AUTOINCREMENT
     notNull = true,
     unique = true,
     primaryKey = true

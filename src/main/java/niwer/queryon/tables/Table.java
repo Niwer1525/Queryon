@@ -42,7 +42,7 @@ public abstract class Table {
     public final Set<Column> columns() { return Set.copyOf(COLUMNS); }
 
     /**
-     * Helper method to create a column definition for the table. It supports basic column types (INT, VARCHAR, BOOLEAN) and allows to set various constraints (NOT NULL, UNIQUE, AUTO_INCREMENT, PRIMARY KEY) and default values.
+     * Helper method to create a column definition for the table. It supports basic column types (INT, VARCHAR, BOOLEAN) and allows to set various constraints (NOT NULL, UNIQUE, AUTOINCREMENT, PRIMARY KEY) and default values.
      * 
      * @param name The name of the column
      * @param type The type of the column (INT, VARCHAR, BOOLEAN)

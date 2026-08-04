@@ -21,7 +21,7 @@ public @interface IColumnField {
 
     int charLimit() default 0; // Optional: specify a character limit for string types (VARCHAR).
 
-    boolean autoIncrement() default false; // Optional: specify if the column should be AUTO_INCREMENT (for integer types)
+    boolean autoIncrement() default false; // Optional: specify if the column should be AUTOINCREMENT (for integer types)
     
     boolean notNull() default false; // Optional: specify if the column should be NOT NULL
 

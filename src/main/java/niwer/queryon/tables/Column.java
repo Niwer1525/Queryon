@@ -231,7 +231,7 @@ public class Column {
 
     /**
      * Builds a SQLite-safe column definition for ALTER TABLE ... ADD COLUMN.
-     * SQLite does not allow adding UNIQUE, PRIMARY KEY, or AUTO_INCREMENT constraints this way.
+     * SQLite does not allow adding UNIQUE, PRIMARY KEY, or AUTOINCREMENT constraints this way.
      */
     protected final String toAlterColumnSQL() {
         final StringBuilder QUERY = new StringBuilder(ESCAPED_NAME + " " + TYPE.sql());
