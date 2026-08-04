@@ -216,8 +216,8 @@ public class Column {
     public String toString() {
         final StringBuilder QUERY = new StringBuilder(ESCAPED_NAME + " " + TYPE.sql());
         if (TYPE == EnumColumnTypes.VARCHAR) QUERY.append(String.format("(%d)", SIZE));
-        if (autoIncrement) QUERY.append(" AUTO_INCREMENT");
         if (primaryKey) QUERY.append(" PRIMARY KEY");
+        if (autoIncrement) QUERY.append(" AUTOINCREMENT");
         if (notNull) QUERY.append(" NOT NULL");
         if (unique) QUERY.append(" UNIQUE");
         final String DEFAULT_VALUE_SQL = defaultValueSQL();
