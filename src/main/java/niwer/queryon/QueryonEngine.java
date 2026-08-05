@@ -67,6 +67,7 @@ public class QueryonEngine {
         final String[] VALUES = Arrays.stream(values).map(t -> {
             if (t instanceof String) return escapeString ? "'" + t + "'" : (String) t;
             else if (t instanceof Date) return "'" + dateTimeToSQL((Date) t) + "'";
+            else if (t instanceof Enum) return "'" + ((Enum<?>) t).name() + "'"; // Enums are converted to their name
             else return String.valueOf(t);
         }).toArray(String[]::new);
         return formatValues(VALUES);

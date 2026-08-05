@@ -34,6 +34,7 @@ public abstract class SQLSerializable<T> {
                 else if (FIELD.getType() == double.class || FIELD.getType() == Double.class) FIELD.set(this, resultSet.getDouble(COLUMN_NAME));
                 else if (FIELD.getType() == float.class || FIELD.getType() == Float.class) FIELD.set(this, resultSet.getFloat(COLUMN_NAME));
                 else if (FIELD.getType() == Date.class) FIELD.set(this, resultSet.getDate(COLUMN_NAME));
+                else if (FIELD.getType().isEnum()) FIELD.set(this, enumFromString(FIELD.getType(), resultSet.getString(COLUMN_NAME)));
                 else throw new UnsupportedOperationException("Unsupported field type " + FIELD.getType().getName() + " for field " + FIELD.getName());
             } catch (final SQLException EX) {
                 throw new RuntimeException("Failed to get value for column " + COLUMN_NAME + " during objectification of " + this.getClass().getName(), EX);
@@ -77,6 +78,17 @@ public abstract class SQLSerializable<T> {
             if (FIELD.isAnnotationPresent(IColumnField.class)) FIELDS.put(FIELD, FIELD.getAnnotation(IColumnField.class));
         }
         return FIELDS;
+    }
+
+    private static Enum<?> enumFromString(Class<?> enumType, String name) {
+        if (!enumType.isEnum()) throw new IllegalArgumentException(enumType.getCanonicalName() + " is not an enum type");
+
+        /* Get the enum constant by name */
+        for (Object constant : enumType.getEnumConstants()) {
+            final Enum<?> ENUM_CONSTANT = (Enum<?>) constant;
+            if (ENUM_CONSTANT.name().equals(name)) return ENUM_CONSTANT;
+        }
+        throw new IllegalArgumentException("No enum constant " + enumType.getCanonicalName() + "." + name);
     }
 
     /**
