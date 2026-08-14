@@ -16,5 +16,7 @@ public @interface IDefaultValue {
 
     String value() default ""; // Optional: specify a default value for the column (default is no default value)
 
+    Class<?> type() default String.class; // Optional: specify the type of the default value (default is String)
+
     //TODO add support for CHECK constraints in the future, but for now, we will only support default values.
 }

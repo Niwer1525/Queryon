@@ -15,6 +15,7 @@ public enum EnumColumnTypes {
     VARCHAR("VARCHAR"), // No class, this is handled by checking the charLimit in the ColumnField annotation
 
     INT("INTEGER", Integer.class, int.class),
+    BIGINT("BIGINT", Long.class, long.class),
     REAL("REAL", Double.class, double.class, Float.class, float.class),
     BOOLEAN("BOOLEAN", Boolean.class, boolean.class),
     DATE("DATE", java.sql.Date.class),

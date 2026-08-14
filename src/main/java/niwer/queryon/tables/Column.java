@@ -23,7 +23,9 @@ public class Column {
     private final DataBase DATA_BASE;
     private final EnumColumnTypes TYPE;
     private final int SIZE; // Only used for VARCHAR, ignored otherwise
+
     private final String[] ENUM_VALUES_NAMES; // Only used for ENUM, ignored otherwise
+    private final Enum<?>[] ENUM_VALUES; // Only used for ENUM, ignored otherwise
     
     private boolean autoIncrement = false;
     private boolean notNull = false;
@@ -43,9 +45,14 @@ public class Column {
         this.ESCAPED_NAME = QueryonEngine.escapeString(annotation.name().isEmpty() ? field.getName() : annotation.name());
         this.SIZE = annotation.charLimit();
         this.TYPE = EnumColumnTypes.fromJava(field);
-        if (this.TYPE == EnumColumnTypes.ENUM) this.ENUM_VALUES_NAMES = enumToStrings(field.getType().asSubclass(Enum.class));
-        else this.ENUM_VALUES_NAMES = null;
-        
+        if (this.TYPE == EnumColumnTypes.ENUM) {
+            this.ENUM_VALUES_NAMES = enumToStrings(field.getType().asSubclass(Enum.class));
+            this.ENUM_VALUES = field.getType().asSubclass(Enum.class).getEnumConstants();
+        } else {
+            this.ENUM_VALUES_NAMES = null;
+            this.ENUM_VALUES = null;
+        }
+
         if (annotation.charLimit() > 0 && TYPE != EnumColumnTypes.VARCHAR) throw new IllegalArgumentException("charLimit is only applicable to VARCHAR columns for column " + ESCAPED_NAME);
         if (annotation.autoIncrement() && TYPE != EnumColumnTypes.INT) throw new IllegalArgumentException("autoIncrement is only applicable to INT columns for column " + ESCAPED_NAME);
         if (annotation.notNull()) notNull();
@@ -79,8 +86,13 @@ public class Column {
         this.ESCAPED_NAME = QueryonEngine.escapeString(name);
         this.TYPE = type;
         this.SIZE = size;
-        if (type == EnumColumnTypes.ENUM) this.ENUM_VALUES_NAMES = Arrays.stream(enumType.getEnumConstants()).map(Enum::name).toArray(String[]::new);
-        else this.ENUM_VALUES_NAMES = null;
+        if (type == EnumColumnTypes.ENUM) {
+            this.ENUM_VALUES_NAMES = Arrays.stream(enumType.getEnumConstants()).map(Enum::name).toArray(String[]::new);
+            this.ENUM_VALUES = enumType.getEnumConstants();
+        } else {
+            this.ENUM_VALUES_NAMES = null;
+            this.ENUM_VALUES = null;
+        }
     }
 
     /**
@@ -174,17 +186,14 @@ public class Column {
         return switch (this.TYPE) {
             case ENUM -> {
                 if (ENUM_VALUES_NAMES == null || ENUM_VALUES_NAMES.length == 0) throw new IllegalStateException("ENUM column has no defined values for column " + ESCAPED_NAME);
-                boolean found = false;
-                for (String enumValue : ENUM_VALUES_NAMES) {
-                    if (enumValue.equals(str)) {
-                        found = true;
-                        break;
-                    }
+
+                for (int i = 0; i < ENUM_VALUES_NAMES.length; i++) {
+                    if (ENUM_VALUES_NAMES[i].equals(str)) yield ENUM_VALUES[i];
                 }
-                if (!found) throw new IllegalArgumentException("Default value string does not match any of the defined ENUM values for column " + ESCAPED_NAME);
-                yield str;
+                throw new IllegalArgumentException("Default value string does not match any of the defined ENUM values for column " + ESCAPED_NAME);
             }
             case REAL -> Double.parseDouble(str);
+            case BIGINT -> Long.parseLong(str);
             case INT -> Integer.parseInt(str);
             case VARCHAR, TEXT, DATE, DATE_TIME -> str;
             case BOOLEAN -> Boolean.parseBoolean(str);
@@ -216,6 +225,7 @@ public class Column {
             }
             case REAL -> this.defaultValue = (Double) value;
             case INT -> this.defaultValue = (Integer) value;
+            case BIGINT -> this.defaultValue = (Long) value;
             case VARCHAR -> {
                 final String STRING_VALUE = value.toString();
                 if (STRING_VALUE.length() > SIZE) throw new IllegalArgumentException("Default value length exceeds VARCHAR column size for column " + ESCAPED_NAME);
@@ -240,7 +250,7 @@ public class Column {
     private String defaultValueSQL() {
         if (defaultValue == null) return null;
         return switch (TYPE) {
-            case BOOLEAN, INT, REAL -> String.valueOf(defaultValue);
+            case BOOLEAN, INT, REAL, BIGINT -> String.valueOf(defaultValue);
             case ENUM, VARCHAR, TEXT, DATE, DATE_TIME -> String.format("'%s'", defaultValue);
         };
     }
