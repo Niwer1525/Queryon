@@ -53,6 +53,12 @@ public class Column {
         if (annotation.primaryKey()) primaryKey(); // This will also set notNull and unique to true
         if (annotation.autoIncrement()) autoIncrement();
         if (annotation.foreignKey().table() != Table.class) foreignKey(annotation.foreignKey().table(), annotation.foreignKey().column(), annotation.foreignKey().onDelete());
+        if (annotation.defaultValue() != null) {
+            final Object defaultValue = convertTObject(annotation.defaultValue().value());
+            defaultValue(defaultValue);
+
+            //TODO add support for CHECK constraints in the future, but for now, we will only support default values.
+        }
         
         final Object DEFAULT_VALUE = SQLSerializable.defaultDataFromField(field);
         if (DEFAULT_VALUE != null) defaultValue(DEFAULT_VALUE);
@@ -163,6 +169,28 @@ public class Column {
         return defaultValue(value);
     }
 
+    private final Object convertTObject(String str) {
+        if (str == null || str.isEmpty()) return null;
+        return switch (this.TYPE) {
+            case ENUM -> {
+                if (ENUM_VALUES_NAMES == null || ENUM_VALUES_NAMES.length == 0) throw new IllegalStateException("ENUM column has no defined values for column " + ESCAPED_NAME);
+                boolean found = false;
+                for (String enumValue : ENUM_VALUES_NAMES) {
+                    if (enumValue.equals(str)) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) throw new IllegalArgumentException("Default value string does not match any of the defined ENUM values for column " + ESCAPED_NAME);
+                yield str;
+            }
+            case REAL -> Double.parseDouble(str);
+            case INT -> Integer.parseInt(str);
+            case VARCHAR, TEXT, DATE, DATE_TIME -> str;
+            case BOOLEAN -> Boolean.parseBoolean(str);
+        };
+    }
+
     /**
      * Sets the default value for the column.
      * The type of the default value must match the column type (Integer for INT, String for VARCHAR, Boolean for BOOLEAN, etc). If the type does not match, an IllegalArgumentException is thrown.
@@ -175,10 +203,15 @@ public class Column {
      * Or if you want to set the date in string format, it must match the expected format for the column type (e.g. "YYYY-MM-DD" for DATE and "YYYY-MM-DD HH:MM:SS" for DATE_TIME).
      */
     public final Column defaultValue(Object value) {
+        if (value == null) {
+            this.defaultValue = null;
+            return this;
+        }
+
+        /* For each column type, check the type of the default value and set it accordingly */
         switch (this.TYPE) {
             case ENUM -> {
-                if (!(value instanceof Enum))
-                    throw new IllegalArgumentException("Default value type does not match column type for column " + ESCAPED_NAME);
+                if (!(value instanceof Enum)) throw new IllegalArgumentException("Default value type does not match column type for column " + ESCAPED_NAME);
                 this.defaultValue = value;
             }
             case REAL -> this.defaultValue = (Double) value;

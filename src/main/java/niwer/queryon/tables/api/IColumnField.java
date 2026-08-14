@@ -32,4 +32,6 @@ public @interface IColumnField {
     EnumForeginKeyAction onDelete() default EnumForeginKeyAction.NO_ACTION; // Optional: specify the action to take on delete for foreign keys (default is NO ACTION)
 
     IForeignKey foreignKey() default @IForeignKey(table = Table.class, column = ""); // Optional: specify a foreign key relationship (default is no foreign key)
+
+    IDefaultValue defaultValue() default @IDefaultValue(value = ""); // Optional: specify a default value for the column (default is no default value)
 }
