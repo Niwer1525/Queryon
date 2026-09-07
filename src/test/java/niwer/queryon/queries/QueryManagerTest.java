@@ -1,6 +1,7 @@
 package niwer.queryon.queries;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -110,11 +111,13 @@ class QueryManagerTest {
         final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         addUsers(DB);
 
-        assertThrows(IllegalStateException.class, () -> {
+        assertDoesNotThrow(() -> {
             QueryManager.queryList(DB, TestUser.class, """
                 SELECT * FROM test_table WHERE name = ?
             """, "Alice");
         });
+        final List<?> list = (List<?>) QueryManager.queryList(DB, TestUser.class, "SELECT * FROM test_table WHERE name = ?", "Alice");
+        assertEquals(1, list.size(), "Expected exactly one result for the query");
     }
 
     @Test void testExecuteSQLCommandForPrimitive(@TempDir File tempDir) throws QueryonException {

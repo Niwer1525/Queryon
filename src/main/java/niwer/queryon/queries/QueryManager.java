@@ -132,11 +132,7 @@ public class QueryManager {
     public static <T extends SQLSerializable<T>> T querySerializable(DataBase db, Class<T> serializable, String sql, Object... params) throws QueryonException {
         final Object RESULT = query(db, serializable, sql, params);
         if (RESULT == null) return null;
-        if (RESULT instanceof SQLSerializable ser) {
-            @SuppressWarnings("unchecked")
-            final T TYPED_RESULT = (T) ser; // Java doesn't allow to directly cast SQLSerializable to T, so we need to do it in two steps
-            return TYPED_RESULT;
-        }
+        if (serializable.isInstance(RESULT)) return serializable.cast(RESULT);
         throw new IllegalStateException("Expected a result of type " + serializable.getName() + ", but got " + (RESULT != null ? RESULT.getClass().getName() : "null"));
     }
 
@@ -160,6 +156,7 @@ public class QueryManager {
             final List<T> TYPED_LIST = (List<T>) lst; // Java doesn't allow to directly cast List<?> to List<T>, so we need to do it in two steps
             return TYPED_LIST;
         }
+        if(serializable.isInstance(RESULT)) return List.of(serializable.cast(RESULT)); // If the result is a single object, return it as a list with one element
         throw new IllegalStateException("An error occurred while retrieving the result list. Expected a List of " + serializable.getName() + ", but got " + (RESULT != null ? RESULT.getClass().getName() : "null"));
     }
 
