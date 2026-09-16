@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -64,6 +65,8 @@ class QueryManagerTest {
     @Test void testPerQueryConnectionMode(@TempDir File tempDir) throws QueryonException {
         final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir).setConnectionMode(DataBase.ConnectionMode.PER_QUERY);
 
+        assertThrows(IllegalArgumentException.class, () -> QueryonEngineTest.setupUsersDB(tempDir).setConnectionMode(null));
+
         addUsers(DB);
 
         final Object RESULT = QueryManager.queryInt(DB, """
@@ -71,6 +74,17 @@ class QueryManagerTest {
         """);
         assertNotNull(RESULT);
         assertInstanceOf(Integer.class, RESULT);
+        assertFalse(DB.isConnected(), "Per-query mode should not keep a shared connection open");
+
+        final DataBase DB_2 = QueryonEngineTest.setupUsersDB(tempDir).setConnectionMode(DataBase.ConnectionMode.PERSISTENT);
+
+        addUsers(DB_2);
+
+        final Object RESULT_2 = QueryManager.queryInt(DB_2, """
+            SELECT COUNT(*) FROM test_table
+        """);
+        assertNotNull(RESULT_2);
+        assertInstanceOf(Integer.class, RESULT_2);
         assertFalse(DB.isConnected(), "Per-query mode should not keep a shared connection open");
     }
 
@@ -182,5 +196,21 @@ class QueryManagerTest {
         """, "Alice");
         assertNotNull(FLOAT_RESULT);
         assertInstanceOf(Float.class, FLOAT_RESULT);
+    }
+
+    @Test void testQueryMap(@TempDir File tempDir) throws QueryonException {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
+        addUsers(DB);
+
+        final List<Map<String, Object>>  RESULT = QueryManager.queryMap(DB, """
+            SELECT * FROM test_table WHERE name = ?
+        """, "Alice");
+        
+        assertNotNull(RESULT);
+        assertInstanceOf(List.class, RESULT);
+        RESULT.forEach(map -> {
+            assertInstanceOf(String.class, map.get("name"));
+            assertInstanceOf(Integer.class, map.get("age"));
+        });
     }
 }

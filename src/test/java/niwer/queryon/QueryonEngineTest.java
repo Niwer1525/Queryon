@@ -2,6 +2,7 @@ package niwer.queryon;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
@@ -76,6 +77,16 @@ public class QueryonEngineTest {
 
         final String FORMATTED_DATE_ESCAPED = QueryonEngine.formatValues(true, "Bob", new Date(0), true);
         assertEquals("'Bob', '1970-01-01 00:00:00', true", FORMATTED_DATE_ESCAPED);
+
+        final String FORMATTED_ENUM = QueryonEngine.formatValues(true, "Bob", TestEnum.VALUE1, true);
+        assertEquals("'Bob', 'VALUE1', true", FORMATTED_ENUM);
+    }
+
+    @Test void testRawExpression() {
+        assertEquals("age + 1", QueryonEngine.raw("age + 1").toString());
+
+        assertThrows(IllegalArgumentException.class, () -> QueryonEngine.raw(null));
+        assertThrows(IllegalArgumentException.class, () -> QueryonEngine.raw(""));
     }
 
     @Test void testIsExpression() {
@@ -96,5 +107,22 @@ public class QueryonEngineTest {
     @Test void testEscapeString() {
         final String TABLE_NAME = "users";
         assertEquals("\"users\"", QueryonEngine.escapeString(TABLE_NAME));
+    }
+
+    @Test void testWrap() {
+        assertThrows(IllegalArgumentException.class, () -> QueryonEngine.wrap(null));
+
+        assertEquals(Void.class, QueryonEngine.wrap(void.class));
+        assertEquals(Integer.class, QueryonEngine.wrap(int.class));
+        assertEquals(Long.class, QueryonEngine.wrap(long.class));
+        assertEquals(Boolean.class, QueryonEngine.wrap(boolean.class));
+        assertEquals(Double.class, QueryonEngine.wrap(double.class));
+        assertEquals(Float.class, QueryonEngine.wrap(float.class));
+        assertEquals(Byte.class, QueryonEngine.wrap(byte.class));
+        assertEquals(Short.class, QueryonEngine.wrap(short.class));
+        assertEquals(Character.class, QueryonEngine.wrap(char.class));
+
+        assertEquals(Object.class, QueryonEngine.wrap(Object.class));
+        assertEquals(String.class, QueryonEngine.wrap(String.class));
     }
 }

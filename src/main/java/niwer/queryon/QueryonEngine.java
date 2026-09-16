@@ -115,4 +115,32 @@ public class QueryonEngine {
     public static String escapeString(String str) {
         return "\"" + str + "\"";
     }
+
+    /**
+     * Wraps a primitive type in its corresponding wrapper class.
+     * 
+     * @param type The primitive type to wrap
+     * @return The corresponding wrapper class, or the original type if it's not primitive
+     */
+    public static Class<?> wrap(Class<?> type) {
+        if(type == null) throw new IllegalArgumentException("Type cannot be null");
+        
+        /* Wrap primitive types in their corresponding wrapper classes */
+        if(type.isPrimitive()) {
+            return switch (type.getName()) {
+                case "int" -> Integer.class;
+                case "long" -> Long.class;
+                case "boolean" -> Boolean.class;
+                case "double" -> Double.class;
+                case "float" -> Float.class;
+                case "byte" -> Byte.class;
+                case "short" -> Short.class;
+                case "char" -> Character.class;
+                case "void" -> Void.class;
+                default -> type; // Should never happen
+            };
+        }
+
+        return type;
+    }
 }

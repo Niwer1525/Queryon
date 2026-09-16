@@ -5,15 +5,42 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.File;
+import java.lang.reflect.Field;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import niwer.queryon.QueryonEngineTest;
+import niwer.queryon.SQLSerializable;
 import niwer.queryon.TestUserTable;
 import niwer.queryon.queries.Expression;
+import niwer.queryon.tables.api.IColumnField;
+import niwer.queryon.tables.api.IDefaultValue;
 
 class ColumnTest {
+    
+    private class TestSerializable extends SQLSerializable<TestSerializable> {
+        @IColumnField(name = "name", defaultValue = @IDefaultValue(value = "default_name"))
+        private String name;
+    }
+
+    @Test void testColumnCreationWithMissingParam(@TempDir File tempDir) {
+        assertThrows(IllegalArgumentException.class, () -> new Column(null, null, null));
+
+
+        final Field field = TestSerializable.class.getDeclaredFields()[0];
+        final IColumnField annotation = field.getAnnotation(IColumnField.class);
+
+        assertThrows(IllegalArgumentException.class, () -> new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), field, null));
+        assertThrows(IllegalArgumentException.class, () -> new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), null, annotation));
+    }
+
+    @Test void testColumnCreationDefaultValues(@TempDir File tempDir) {
+        final Field field = TestSerializable.class.getDeclaredFields()[0];
+        final IColumnField annotation = field.getAnnotation(IColumnField.class);
+
+        // assertDoesNotThrow(() -> new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), field, annotation)); //TODO
+    }
 
     @Test void testColumnCreation(@TempDir File tempDir) {
         assertDoesNotThrow(() -> {

@@ -135,6 +135,10 @@ class TableTest {
         assertDoesNotThrow(() -> {
             TABLE.addColumnsFromClass(TestAnnotatedClass.class).execute();
         }, "Should not throw an exception when creating a column from a valid ColumnField annotation");
+        
+        assertDoesNotThrow(() -> {
+            TABLE.addColumnsFromClass(TestNonAnnotatedClass.class).execute();
+        }, "Should not throw an exception when creating a column from a class without ColumnField annotations");
     }
 
     @Test void testCreateColumnFromAnnotationIllegal(@TempDir File tempDir) {
@@ -152,6 +156,16 @@ class TableTest {
         }, "Should throw IllegalArgumentException when creating a column from an invalid ColumnField annotation");
     }
     
+    @SuppressWarnings("unused")
+    private static class TestNonAnnotatedClass extends SQLSerializable<TestNonAnnotatedClass> {
+        private int id;
+        private String name;
+        private String uuid;
+        private String foodId;
+        private TestEnum testEnum;
+        private Date testDate;
+    }
+
     private static class TestAnnotatedClass extends SQLSerializable<TestAnnotatedClass> {
         @IColumnField(autoIncrement = true, primaryKey = true)
         private int id ;

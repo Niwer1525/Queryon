@@ -120,6 +120,15 @@ public class SelectionManager extends QueryExecutor {
     }
 
     /**
+     * Executes the selection query and returns the result as a list of maps, where each map represents a row in the result set with column names as keys and corresponding values as values.
+     * 
+     * @return A list of maps representing the result of the query, where each map corresponds to a row in the result set
+     */
+    public final List<Map<String, Object>> executeMap() {
+        return QueryManager.queryMap(this.DATA_BASE, this.buildQuery());
+    }
+
+    /**
      * Executes the selection query and returns the result as an instance of the specified serializer class.
      * 
      * @param <T> The type of the serializer class

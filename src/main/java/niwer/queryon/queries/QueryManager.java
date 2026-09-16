@@ -7,6 +7,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import niwer.lumen.Console;
 import niwer.queryon.DataBase;
@@ -173,6 +174,48 @@ public class QueryManager {
     public static String queryString(DataBase db, String sql, Object... params) throws QueryonException { return (String)queryPrimitive(db, String.class, sql, params); }
 
     /**
+     * Perform an SQL query on the database and get the result as a list of maps, where each map represents a row with column names as keys and column values as values.
+     * 
+     * @param db The database to perform the query on
+     * @param sql The SQL query to perform, with '?' placeholders for parameters
+     * @param params The parameters to set in the prepared statement, in the order of the placeholders
+     * @return A list of maps of column names to values representing the result of the query, or null if the query doesn't return anything or if an error occurs
+     * @throws QueryonException if an error occurs while executing the query or processing the result
+     */
+    public static List<Map<String, Object>> queryMap(DataBase db, String sql, Object... params) throws QueryonException {
+        final Object RESULT = executeQuery(db, result -> {
+            try {
+                if (result == null) return null; // If the query doesn't return a result set (e.g. UPDATE)
+
+                final List<Map<String, Object>> RESULTS = new ArrayList<>(); // List to hold multiple results
+                final ResultSetMetaData META_DATA = result.getMetaData();
+                final int COLUMN_COUNT = META_DATA.getColumnCount();
+
+                while (result.next()) {
+                    final Map<String, Object> ROW_MAP = new java.util.HashMap<>();
+                    for (int i = 1; i <= COLUMN_COUNT; i++) {
+                        ROW_MAP.put(META_DATA.getColumnName(i), result.getObject(i));
+                    }
+                    RESULTS.add(ROW_MAP);
+                }
+                result.close(); // Close the result set after processing
+
+                if (RESULTS.isEmpty()) return null; // If no results were found, return null
+                return RESULTS; // Return the list of maps
+            } catch (Exception e) {
+                throw new QueryonException("Error while processing query result into map.", e);
+            }
+        }, sql, true, params);
+
+        if (RESULT instanceof List<?> lst) {
+            @SuppressWarnings("unchecked")
+            final List<Map<String, Object>> TYPED_LIST = (List<Map<String, Object>>) lst;
+            return TYPED_LIST;
+        }
+        throw new IllegalStateException("Expected a List of Maps as the result, but got " + (RESULT != null ? RESULT.getClass().getName() : "null"));
+    }
+
+    /**
      * Perform an SQL query on the database and get the result as a primitive type (e.g. boolean, int, long, double, float, String).
      * This assumes that the query returns a single value (e.g. SELECT COUNT(*) FROM table) and will throw an exception if the query returns multiple values or no value.
      * 
@@ -205,9 +248,10 @@ public class QueryManager {
                 throw new QueryonException("Error occurred while converting primitive result.", e);
             }
         }, sql, true, params);
-
         if (RESULT == null) throw new IllegalStateException("Expected a single value result, but got null.");
-        if (primitiveType.isInstance(RESULT)) {
+        
+        final Class<?> WRAPPED = QueryonEngine.wrap(primitiveType); // Wrap the primitive type to its corresponding wrapper class
+        if (WRAPPED.isInstance(RESULT)) {
             @SuppressWarnings("unchecked")
             final T TYPED_RESULT = (T) RESULT; // Java doesn't allow to directly cast Object to T, so we need to do it in two steps
             return TYPED_RESULT;

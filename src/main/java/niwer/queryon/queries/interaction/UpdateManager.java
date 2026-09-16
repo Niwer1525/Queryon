@@ -5,6 +5,7 @@ import java.util.Set;
 
 import niwer.queryon.DataBase;
 import niwer.queryon.QueryonEngine;
+import niwer.queryon.SQLSerializable;
 import niwer.queryon.queries.Expression;
 import niwer.queryon.queries.QueryManager;
 import niwer.queryon.tables.Table;
@@ -33,6 +34,20 @@ public class UpdateManager extends QueryExecutor {
         if (db == null) throw new IllegalArgumentException("DataBase instance cannot be null.");
         if (table == null) throw new IllegalArgumentException("Table class cannot be null.");
         return new UpdateManager(db, table);
+    }
+
+    /**
+     * Adds a column and its new value to the update query, using values from a SQLSerializable object.
+     * 
+     * @param column The name of the column to update
+     * @param value The SQLSerializable object containing the new value for the column
+     * @return The UpdateManager instance for chaining
+     */
+    public final UpdateManager set(SQLSerializable<?> value) {
+        final String[] COLUMNS = value.columnNames();
+        final Object[] VALUES = value.valuesFromObject();
+        for (int i = 0; i < value.columnNames().length; i++) this.set(COLUMNS[i], VALUES[i]);
+        return this;
     }
 
     /**

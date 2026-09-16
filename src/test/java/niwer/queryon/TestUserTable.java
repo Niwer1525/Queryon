@@ -4,6 +4,7 @@ import niwer.queryon.queries.Expression;
 import niwer.queryon.tables.EnumColumnTypes;
 import niwer.queryon.tables.Table;
 import niwer.queryon.tables.api.IColumnField;
+import niwer.queryon.tables.api.IDefaultValue;
 
 public class TestUserTable extends Table {
 
@@ -40,7 +41,7 @@ public class TestUserTable extends Table {
         @IColumnField(name = "id") // Optional: specify the column name if it differs from the field name
         private int id;
         
-        @IColumnField(name = "name")
+        @IColumnField(name = "name", defaultValue = @IDefaultValue(value = "default_name"))
         private String name;
 
         @IColumnField

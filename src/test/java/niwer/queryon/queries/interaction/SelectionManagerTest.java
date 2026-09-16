@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -95,7 +96,23 @@ class SelectionManagerTest {
 
         assertEquals(3, SelectionManager.select(DB, TestUserTable.class, "id").executeCountResults());
 
-        // final int ID = SelectionManager.select(DB, TestUserTable.class, "id").where(Expression.of("id").isEqualTo(1)).executePrimitive(int.class);
-        // assertEquals(1, ID);
+        final int ID = SelectionManager.select(DB, TestUserTable.class, "id")
+            .where(Expression.of("id").isEqualTo(1))
+            .executePrimitive(int.class);
+        assertEquals(1, ID);
+    }
+
+    @Test void testSelectionManagerToMap(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
+
+        InsertionManager.insert(DB, TestUserTable.class, "id", "name", "age")
+            .rows(InsertionManager.of(1, "Alice", 30), InsertionManager.of(2, "Bob", 25), InsertionManager.of(3, "Carol", 28))
+            .execute();
+        
+        final List<Map<String, Object>> USERS = SelectionManager.select(DB, TestUserTable.class).executeMap();
+        assertEquals(3, USERS.size()); // 3 rows
+        assertEquals("Alice", USERS.get(0).get("name"));
+        assertEquals("Bob", USERS.get(1).get("name"));
+        assertEquals("Carol", USERS.get(2).get("name"));
     }
 }

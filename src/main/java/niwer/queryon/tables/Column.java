@@ -40,6 +40,8 @@ public class Column {
 
     protected Column(DataBase db, Field field, IColumnField annotation) {
         if (db == null) throw new IllegalArgumentException("DataBase instance cannot be null.");
+        if (field == null) throw new IllegalArgumentException("Field cannot be null.");
+        if (annotation == null) throw new IllegalArgumentException("IColumnField annotation cannot be null.");
 
         this.DATA_BASE = db;
         this.ESCAPED_NAME = QueryonEngine.escapeString(annotation.name().isEmpty() ? field.getName() : annotation.name());

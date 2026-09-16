@@ -38,6 +38,7 @@ public class InsertionManager extends QueryExecutor {
      * @return An InsertionManager instance to build and execute the query
      */
     public final static InsertionManager insert(DataBase db, Class<? extends Table> table, SQLSerializable<?> object) {
+        if(object == null) throw new IllegalArgumentException("SQLSerializable object cannot be null for insertion.");
         return new InsertionManager(db, table, false, object.columnNames()).row(object.valuesFromObject());
     }
 
@@ -50,6 +51,7 @@ public class InsertionManager extends QueryExecutor {
      * @return An InsertionManager instance to build and execute the query
      */
     public final static InsertionManager insertOrIgnore(DataBase db, Class<? extends Table> table, SQLSerializable<?> object) {
+        if(object == null) throw new IllegalArgumentException("SQLSerializable object cannot be null for insertion.");
         return new InsertionManager(db, table, true, object.columnNames()).row(object.valuesFromObject());
     }
 
@@ -145,9 +147,7 @@ public class InsertionManager extends QueryExecutor {
         switch (conflictResolution) {
             case NONE -> { /* No conflict resolution, do nothing */ }
             case DO_NOTHING -> QUERY.append(" ON CONFLICT DO NOTHING");
-            case DO_UPDATE -> {
-                QUERY.append(" ON CONFLICT DO UPDATE SET ").append(doUpdateManager.buildQuery().replaceFirst("UPDATE " + TABLE.escapedName() + " SET ", ""));
-            }
+            case DO_UPDATE -> QUERY.append(" ON CONFLICT DO UPDATE SET ").append(doUpdateManager.buildQuery().replaceFirst("UPDATE " + TABLE.escapedName() + " SET ", ""));
         }
 
         return QUERY.toString();

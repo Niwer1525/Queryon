@@ -3,6 +3,7 @@ package niwer.queryon;
 import niwer.queryon.tables.EnumForeginKeyAction;
 import niwer.queryon.tables.Table;
 import niwer.queryon.tables.api.IColumnField;
+import niwer.queryon.tables.api.IDefaultValue;
 import niwer.queryon.tables.api.IForeignKey;
 
 public class TestFoodTable extends Table {
@@ -27,7 +28,7 @@ public class TestFoodTable extends Table {
         @IColumnField(autoIncrement = true, primaryKey = true)
         private int id;
         
-        @IColumnField(name = "name", charLimit = 255, notNull = true)
+        @IColumnField(name = "name", charLimit = 255, notNull = true, defaultValue = @IDefaultValue(value = "default_name"))
         private String name;
 
         @IColumnField(name = "calories")
