@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import niwer.lumen.Console;
+import niwer.queryon.backup.DatabaseBackupManager;
 import niwer.queryon.queries.QueryManager;
 import niwer.queryon.tables.Table;
 
@@ -94,6 +95,7 @@ public class DataBase {
      * @return This Database instance for chaining
      */
     public DataBase setPrunePolicy(SchemaPrunePolicy policy) {
+        if (policy == null) throw new IllegalArgumentException("Prune policy cannot be null");
         this.prunePolicy = policy;
         return this;
     }
@@ -124,8 +126,6 @@ public class DataBase {
     }
 
     private void syncColumns() {
-        if (prunePolicy == SchemaPrunePolicy.STRICT_SAFE) return;
-
         /* For each table, get declared columns */
         for (final Table TABLE : REGISTERED_TABLES) {
             final Set<String> DECLARED_COLUMNS = TABLE.getRegisteredColumnNames();

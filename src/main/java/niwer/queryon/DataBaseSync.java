@@ -11,6 +11,8 @@ import niwer.queryon.tables.Table;
 
 public class DataBaseSync {
 
+    private DataBaseSync() {}
+
     protected static List<String> fetchLiveTableNames(DataBase db) {
         final List<String> TABLES_NAMES = new ArrayList<>();
         final String SQL = "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%';";

@@ -25,6 +25,34 @@ class DataBaseTest {
         assertThrows(IllegalArgumentException.class, () -> new DataBase(null));
     }
 
+    @Test void testGetDBFile() {
+        final File dbFile = new File(tempDir, "test.db");
+        final DataBase DB = new DataBase(dbFile);
+        assertNotNull(DB.dataBaseFile(), "getDBFile should return the database file");
+        assertTrue(DB.dataBaseFile().exists(), "Database file should exist after DataBase instantiation");
+    }
+
+    @Test void testPrunePolicy() {
+        final DataBase DB = new DataBase(new File(tempDir, "test.db"));
+        assertDoesNotThrow(() -> DB.setPrunePolicy(SchemaPrunePolicy.PRUNE_COLUMNS));
+        assertDoesNotThrow(() -> DB.setPrunePolicy(SchemaPrunePolicy.PRUNE_ALL));
+        assertThrows(IllegalArgumentException.class, () -> DB.setPrunePolicy(null));
+    }
+
+    @Test void testSyncSchema() {
+        final DataBase DB = new DataBase(new File(tempDir, "test.db"));
+        DB.registerTable(TestUserTable.class);
+
+        DB.setPrunePolicy(SchemaPrunePolicy.STRICT_SAFE);
+        assertDoesNotThrow(() -> DB.syncSchema());
+
+        DB.setPrunePolicy(SchemaPrunePolicy.PRUNE_COLUMNS);
+        assertDoesNotThrow(() -> DB.syncSchema());
+
+        DB.setPrunePolicy(SchemaPrunePolicy.PRUNE_ALL);
+        assertDoesNotThrow(() -> DB.syncSchema());
+    }
+
     @Test void testConnection() {
         final DataBase DB = new DataBase(new File(tempDir, "test.db"));
         try {

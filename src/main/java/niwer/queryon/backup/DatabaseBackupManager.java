@@ -9,8 +9,6 @@ import java.nio.file.attribute.FileTime;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
@@ -127,7 +125,7 @@ public final class DatabaseBackupManager {
             final Path backupFile = backupDirectory.resolve(backupFileName).toAbsolutePath();
 
             Files.createDirectories(backupDirectory);
-            try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + DATABASE_FILE.toAbsolutePath()); Statement statement = connection.createStatement()) {
+            try (Statement statement = this.DATABASE.sqlConnection().createStatement()) {
                 statement.executeUpdate("VACUUM INTO '" + QueryonEngine.escapeString(backupFile.toString()) + "'");
             }
             
