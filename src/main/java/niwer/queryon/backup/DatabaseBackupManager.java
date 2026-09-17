@@ -10,7 +10,6 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
@@ -122,11 +121,14 @@ public final class DatabaseBackupManager {
 
             final String backupFileName = (customBackupFileName != null ? customBackupFileName : this.BACKUP_FILE_PREFIX + "-backup") + "-" + LocalDateTime.now().format(BACKUP_TIMESTAMP) + ".db";
             final Path backupDirectory = this.BACKUP_DIR.toPath();
-            final Path backupFile = backupDirectory.resolve(backupFileName).toAbsolutePath();
+            final Path backupFile = backupDirectory.resolve(backupFileName).toAbsolutePath().normalize();
+            if (!Files.isWritable(backupFile.getParent())) throw new IOException("Target backup directory is not writable: " + backupFile.getParent());
 
             Files.createDirectories(backupDirectory);
-            try (Statement statement = this.DATABASE.sqlConnection().createStatement()) {
-                statement.executeUpdate("VACUUM INTO '" + QueryonEngine.escapeString(backupFile.toString()) + "'");
+            final String SQL = "VACUUM INTO ?";
+            try (var STATEMENT = this.DATABASE.sqlConnection().prepareStatement(SQL)) {
+                STATEMENT.setString(1, backupFile.toString());
+                STATEMENT.executeUpdate();
             }
             
             /* Update tracking variables after a successful backup */

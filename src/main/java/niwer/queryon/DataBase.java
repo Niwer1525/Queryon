@@ -109,7 +109,8 @@ public class DataBase {
     public void syncSchema() {
         if (!this.isConnected()) this.connect();
         if (prunePolicy == SchemaPrunePolicy.STRICT_SAFE) return;
-        if (prunePolicy == SchemaPrunePolicy.PRUNE_COLUMNS) syncColumns();
+        
+        syncColumns(); // Sync columns for both PRUNE_COLUMNS & PRUNE_ALL policies
         if (prunePolicy == SchemaPrunePolicy.PRUNE_ALL) syncTables();
     }
 
