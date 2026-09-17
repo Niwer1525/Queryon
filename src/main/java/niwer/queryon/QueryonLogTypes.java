@@ -7,4 +7,5 @@ import niwer.lumen.types.ILogType;
 public class QueryonLogTypes {
 
     public static final ILogType SQL = new BasicLogType("SQL", EnumLogColor.RED);
+    public static final ILogType BACKUP = new BasicLogType("BACKUP", EnumLogColor.RED);
 }

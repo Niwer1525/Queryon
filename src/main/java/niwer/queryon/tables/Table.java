@@ -2,6 +2,7 @@ package niwer.queryon.tables;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import niwer.lumen.Console;
 import niwer.queryon.DataBase;
@@ -98,6 +99,10 @@ public abstract class Table {
         Console.log("Dropping all rows from table " + this.name()).type(QueryonLogTypes.SQL).container(QueryonEngine.LOGGER).send();
         QueryManager.query(this.DATA_BASE, "DELETE FROM " + this.name() + ";");
         return this;
+    }
+
+    public final Set<String> getRegisteredColumnNames() {
+        return COLUMNS.stream().map(Column::name).collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     /**

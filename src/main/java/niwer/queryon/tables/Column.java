@@ -19,6 +19,7 @@ import niwer.queryon.tables.api.IColumnField;
 public class Column {
     private static final String CURRENT_TIMESTAMP = "CURRENT_TIMESTAMP";
 
+    protected final String NAME;
     protected final String ESCAPED_NAME;
     private final DataBase DATA_BASE;
     private final EnumColumnTypes TYPE;
@@ -44,7 +45,8 @@ public class Column {
         if (annotation == null) throw new IllegalArgumentException("IColumnField annotation cannot be null.");
 
         this.DATA_BASE = db;
-        this.ESCAPED_NAME = QueryonEngine.escapeString(annotation.name().isEmpty() ? field.getName() : annotation.name());
+        this.NAME = annotation.name().isEmpty() ? field.getName() : annotation.name();
+        this.ESCAPED_NAME = QueryonEngine.escapeString(NAME);
         this.SIZE = annotation.charLimit();
         this.TYPE = EnumColumnTypes.fromJava(field);
         if (this.TYPE == EnumColumnTypes.ENUM) {
@@ -85,7 +87,8 @@ public class Column {
         if (type == EnumColumnTypes.ENUM && enumType == null) throw new IllegalArgumentException("ENUM column must have a non-null enum type.");
 
         this.DATA_BASE = db;
-        this.ESCAPED_NAME = QueryonEngine.escapeString(name);
+        this.NAME = name;
+        this.ESCAPED_NAME = QueryonEngine.escapeString(this.NAME);
         this.TYPE = type;
         this.SIZE = size;
         if (type == EnumColumnTypes.ENUM) {
@@ -95,6 +98,14 @@ public class Column {
             this.ENUM_VALUES_NAMES = null;
             this.ENUM_VALUES = null;
         }
+    }
+
+    public final String escapedName() {
+        return this.ESCAPED_NAME;
+    }
+
+    public final String name() {
+        return this.NAME;
     }
 
     /**

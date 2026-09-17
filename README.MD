@@ -91,6 +91,44 @@ DATA_BASE.setConnectionMode(EnumConnectionMode.PER_QUERY); // Each query will cr
 ```
 Note the default is PERSISTENT, which means that all queries will use the same connection.
 
+### Schema synchronization
+Queryon provides a simple way to synchronize your database schema with your Java models. You can use the `syncSchema` method of the `DataBase` class to synchronize your database schema with your Java models. This method will drop tables and columns that are defined in your database but not in your Java models.
+
+By default, it will not work because the prune policy is set to `SchemaPrunePolicy.STRICT_SAFE`, which means that it will not drop tables or columns that are not registered in your Java models. You can change it to `PRUNE_COLUMNS` or `PRUNE_ALL` to allow dropping columns and/or tables that are not registered in your Java models. You can do this by calling the `setPrunePolicy` method of the `DataBase` class.
+```java
+final DataBase DATA_BASE = new DataBase(new File("path/to/database.db"));
+
+DATA_BASE.setPrunePolicy(SchemaPrunePolicy.PRUNE_ALL); // Allow dropping tables and columns that are not registered in your Java models.
+
+// Or 
+
+DATA_BASE.setPrunePolicy(SchemaPrunePolicy.PRUNE_COLUMNS); // Allow dropping columns that are not registered in your Java models.
+
+DATA_BASE.syncSchema();
+```
+
+### Backups
+Queryon provides a simple way to backup your database. You can use the `DatabaseBackupManager` class to create backups of your database.
+Two methods are provided to create backups : `createBackup` and `createWithScheduler`. The first one will allow you to create backups manually, while the second one will  create backups automatically at a specified interval, while still allowing manual backups.
+
+```java
+final DataBase DATA_BASE = new DataBase(new File("path/to/database.db"));
+final File BACKUP_DIR = new File("path/to/backup/dir");
+
+var manager = DatabaseBackupManager.create(DATA_BASE, BACKUP_DIR, "backup_file_prefix", 25); // Will keep backups that are less than 25 days old, and delete the older ones. You can set it to 0 to keep all backups.
+
+var managerWithScheduler = DatabaseBackupManager.createWithScheduler(DATA_BASE, BACKUP_DIR, "backup_file_prefix", 25, 60 * 60 * 1000); // Create a backup every hour and keep backups that are less than 25 days old, and delete the older ones. You can set it to 0 to keep all backups.
+
+// You can also create manual backups using :
+manager.createBackup(); // Create a backup manually
+// Or if you want to create a backup with a custom name :
+manager.createBackup("custom_backup_name"); // Create a backup manually with a custom name
+
+// You can also manually delete old backups using :
+manager.deleteOldBackups();
+
+```
+
 ### Expressions
 Expression is the base class for all expressions in Queryon. It can be used to build complex expressions using a fluent API. For example, you can build a simple expression like this:
 ```java

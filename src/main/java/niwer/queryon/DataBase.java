@@ -7,6 +7,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import niwer.lumen.Console;
 import niwer.queryon.queries.QueryManager;
@@ -21,11 +22,14 @@ import niwer.queryon.tables.Table;
  */
 public class DataBase {
 
+    private SchemaPrunePolicy prunePolicy = SchemaPrunePolicy.STRICT_SAFE;
+
     public static enum ConnectionMode {
         PERSISTENT,
         PER_QUERY
     }
 
+    private final File DATA_BASE_FILE;
     private final String DATA_BASE_PATH;
     private final Set<Table> REGISTERED_TABLES = new HashSet<>();
     private Connection sqlConnection = null;
@@ -39,7 +43,16 @@ public class DataBase {
         if (databaseFile == null) throw new IllegalArgumentException("Database file cannot be null");
         if (!databaseFile.getParentFile().exists() && !databaseFile.getParentFile().mkdirs())
             Console.log("Failed to create database directory: " + databaseFile.getParent()).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
-        this.DATA_BASE_PATH = "jdbc:sqlite:" + databaseFile.getAbsolutePath();
+
+        this.DATA_BASE_FILE = databaseFile;
+        this.DATA_BASE_PATH = "jdbc:sqlite:" + this.DATA_BASE_FILE.getAbsolutePath();
+    }
+    
+    /**
+     * @return The file representing the SQLite database. This is the actual file on disk where the database is stored.
+     */
+    public File dataBaseFile() {
+        return this.DATA_BASE_FILE;
     }
 
     /**
@@ -61,11 +74,68 @@ public class DataBase {
         return this.connectionMode;
     }
 
+    /**
+     * Set the connection mode for the database. In PERSISTENT mode, the connection will remain open until explicitly disconnected. In PER_QUERY mode, the connection will be closed after each query execution.
+     * 
+     * @param connectionMode The connection mode to set. It must be one of the values defined in the ConnectionMode enum.
+     * @return This Database instance for chaining
+     */
     public DataBase setConnectionMode(ConnectionMode connectionMode) {
         if (connectionMode == null) throw new IllegalArgumentException("Connection mode cannot be null");
         this.connectionMode = connectionMode;
         if (connectionMode == ConnectionMode.PER_QUERY) this.disconnect();
         return this;
+    }
+
+    /**
+     * Set the schema pruning policy for the database. This determines how the database will handle discrepancies between the registered tables and the actual database schema when connecting.
+     * 
+     * @param policy The schema pruning policy to set. It must be one of the values defined in the SchemaPrunePolicy enum.
+     * @return This Database instance for chaining
+     */
+    public DataBase setPrunePolicy(SchemaPrunePolicy policy) {
+        this.prunePolicy = policy;
+        return this;
+    }
+
+    /**
+     * Reconciles physical database schema with registered Java models.
+     * 
+     * We strongly recommand create a backup before calling this method, as it may drop tables or columns if they are not registered anymore.
+     * @see DatabaseBackupManager
+     */
+    public void syncSchema() {
+        if (!this.isConnected()) this.connect();
+        if (prunePolicy == SchemaPrunePolicy.STRICT_SAFE) return;
+        if (prunePolicy == SchemaPrunePolicy.PRUNE_COLUMNS) syncColumns();
+        if (prunePolicy == SchemaPrunePolicy.PRUNE_ALL) syncTables();
+    }
+
+    private void syncTables() {
+        final Set<String> DECLARED_NAMES = REGISTERED_TABLES.stream().map(Table::name).collect(Collectors.toSet());
+
+        // SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';
+        for (final String LIVE_TABLE : DataBaseSync.fetchLiveTableNames(this)) {
+            if (!DECLARED_NAMES.contains(LIVE_TABLE)) {
+                Console.log("Pruning unused table: " + LIVE_TABLE).type(QueryonLogTypes.SQL).container(QueryonEngine.LOGGER).send();
+                QueryManager.query(this, "DROP TABLE IF EXISTS " + QueryonEngine.escapeString(LIVE_TABLE) + ";");
+            }
+        }
+    }
+
+    private void syncColumns() {
+        if (prunePolicy == SchemaPrunePolicy.STRICT_SAFE) return;
+
+        /* For each table, get declared columns */
+        for (final Table TABLE : REGISTERED_TABLES) {
+            final Set<String> DECLARED_COLUMNS = TABLE.getRegisteredColumnNames();
+            for (final String COLUMN : DataBaseSync.fetchLiveColumns(this, TABLE)) { // Fetches actually defined columns inside the DataBase file.
+                if (!DECLARED_COLUMNS.contains(COLUMN)) { // If the column isn't declared anymore, then remove it.
+                    Console.log("Pruning unused column " + COLUMN + " from " + TABLE.name()).type(QueryonLogTypes.SQL).container(QueryonEngine.LOGGER).send();
+                    QueryManager.query(this, "ALTER TABLE " + TABLE.escapedName() + " DROP COLUMN " + QueryonEngine.escapeString(COLUMN) + ";");
+                }
+            }
+        }
     }
 
     public Connection openConnection() throws SQLException {
