@@ -3,6 +3,7 @@ package niwer.queryon.tables;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.regex.Pattern;
 
 import niwer.queryon.DataBase;
 import niwer.queryon.QueryonEngine;
@@ -18,6 +19,8 @@ import niwer.queryon.tables.api.IColumnField;
 @SuppressWarnings("rawtypes")
 public class Column {
     private static final String CURRENT_TIMESTAMP = "CURRENT_TIMESTAMP";
+    private static final Pattern DATE_PATTERN = Pattern.compile("^\\d{4}-\\d{2}-\\d{2}$");
+    private static final Pattern DATETIME_PATTERN = Pattern.compile("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$");
 
     protected final String NAME;
     protected final String ESCAPED_NAME;
@@ -111,10 +114,34 @@ public class Column {
     /**
      * Helper method to handle default value assignment for DATE and DATE_TIME columns.
      */
-    private final void handleDateStringDefault(String string, String regex, String typeName) {
-        if (string.equalsIgnoreCase(CURRENT_TIMESTAMP)) this.defaultValue = CURRENT_TIMESTAMP;
-        else if (string.matches(regex)) this.defaultValue = string;
-        else throw new IllegalArgumentException("Default value string does not match expected format for " + typeName + " column for column " + ESCAPED_NAME);
+    private void handleDateDefault(Object value, Pattern pattern, String typeName, boolean supportsCurrentTimestamp) {
+        if (value == null || (value instanceof String s && s.trim().equalsIgnoreCase("NULL"))) {
+            this.defaultValue = null; // Represents no DEFAULT clause attached to this column
+            return;
+        }
+
+        if (value instanceof Date date) {
+            this.defaultValue = supportsCurrentTimestamp ? QueryonEngine.dateTimeToSQL(date) : QueryonEngine.dateToSQL(date);
+            return;
+        }
+
+        if (value instanceof String str) {
+            String trimmed = str.trim();
+            
+            if (supportsCurrentTimestamp && trimmed.equalsIgnoreCase(CURRENT_TIMESTAMP)) {
+                this.defaultValue = CURRENT_TIMESTAMP;
+                return;
+            }
+
+            if (pattern.matcher(trimmed).matches()) {
+                this.defaultValue = trimmed;
+                return;
+            }
+
+            throw new IllegalArgumentException("Default value string does not match expected format for " + typeName + " column for column " + ESCAPED_NAME);
+        }
+
+        throw new IllegalArgumentException("Default value type does not match column type for column " + ESCAPED_NAME);
     }
     
     /**
@@ -246,16 +273,18 @@ public class Column {
             }
             case TEXT -> this.defaultValue = value.toString();
             case BOOLEAN -> this.defaultValue = (Boolean) value;
-            case DATE -> {
-                if (value instanceof Date date) this.defaultValue = QueryonEngine.dateToSQL(date); // Dates are stored as strings in the format "YYYY-MM-DD"
-                else if (value instanceof String string) handleDateStringDefault(string, "\\d{4}-\\d{2}-\\d{2}", "DATE");
-                else throw new IllegalArgumentException("Default value type does not match column type for column " + ESCAPED_NAME);
-            }
-            case DATE_TIME -> {
-                if (value instanceof Date date) this.defaultValue = QueryonEngine.dateTimeToSQL(date); // Datetimes are stored as strings in the format "YYYY-MM-DD HH:MM:SS"
-                else if (value instanceof String string) handleDateStringDefault(string, "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}", "DATE_TIME");
-                else throw new IllegalArgumentException("Default value type does not match column type for column " + ESCAPED_NAME);
-            }
+            case DATE -> handleDateDefault(value, DATE_PATTERN, "DATE", false);
+            case DATE_TIME -> handleDateDefault(value, DATETIME_PATTERN, "DATE_TIME", true);
+            // case DATE -> {
+            //     if (value instanceof Date date) this.defaultValue = QueryonEngine.dateToSQL(date); // Dates are stored as strings in the format "YYYY-MM-DD"
+            //     else if (value instanceof String string) handleDateStringDefault(string, "\\d{4}-\\d{2}-\\d{2}", "DATE");
+            //     else throw new IllegalArgumentException("Default value type does not match column type for column " + ESCAPED_NAME);
+            // }
+            // case DATE_TIME -> {
+            //     if (value instanceof Date date) this.defaultValue = QueryonEngine.dateTimeToSQL(date); // Datetimes are stored as strings in the format "YYYY-MM-DD HH:MM:SS"
+            //     else if (value instanceof String string) handleDateStringDefault(string, "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}", "DATE_TIME");
+            //     else throw new IllegalArgumentException("Default value type does not match column type for column " + ESCAPED_NAME);
+            // }
         }
         return this;
     }

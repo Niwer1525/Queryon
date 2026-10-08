@@ -118,12 +118,28 @@ class ColumnTest {
     }
 
     @Test void testColumnCreationDate(@TempDir File tempDir) {
-        assertDoesNotThrow(() -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.DATE, 0, null)
                 .autoIncrement()
                 .notNull()
                 .unique()
                 .defaultValue("CURRENT_TIMESTAMP", Expression.of("test_column").isEqualTo("CURRENT_TIMESTAMP"));
+        });
+
+        assertDoesNotThrow(() -> {
+            new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.DATE, 0, null)
+                .autoIncrement()
+                .notNull()
+                .unique()
+                .defaultValue("NULL", Expression.of("test_column").isEqualTo("NULL"));
+        });
+
+        assertDoesNotThrow(() -> {
+            new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.DATE_TIME, 0, null)
+                .autoIncrement()
+                .notNull()
+                .unique()
+                .defaultValue("NULL", Expression.of("test_column").isEqualTo("NULL"));
         });
 
         assertDoesNotThrow(() -> {
