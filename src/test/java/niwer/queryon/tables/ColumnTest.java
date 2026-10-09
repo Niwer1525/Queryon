@@ -13,7 +13,7 @@ import org.junit.jupiter.api.io.TempDir;
 import niwer.queryon.QueryonEngineTest;
 import niwer.queryon.SQLSerializable;
 import niwer.queryon.TestUserTable;
-import niwer.queryon.queries.Expression;
+import niwer.queryon.queries.Expressions;
 import niwer.queryon.tables.api.IColumnField;
 import niwer.queryon.tables.api.IDefaultValue;
 
@@ -48,7 +48,7 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue(0, Expression.of("test_column").isLessThan(100));
+                .defaultValue(0, Expressions.isLessThan("test_column", 100));
         });
     }
 
@@ -58,7 +58,7 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue(0, Expression.of("test_column").isLessThan(100));
+                .defaultValue(0, Expressions.isLessThan("test_column", 100));
         });
     }
 
@@ -68,7 +68,7 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue(25.0, Expression.of("test_column").isLessThan(100.0));
+                .defaultValue(25.0, Expressions.isLessThan("test_column", 100.0));
         });
     }
 
@@ -78,7 +78,7 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue("TestContent", Expression.of("test_column").isNotEqualTo("TestContent"));
+                .defaultValue("TestContent", Expressions.isNotEqualTo("test_column", "TestContent"));
         });
 
         assertThrows(IllegalArgumentException.class, () -> {
@@ -86,7 +86,7 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue("TestContent", Expression.of("test_column").isNotEqualTo("TestContent"));
+                .defaultValue("TestContent", Expressions.isNotEqualTo("test_column", "TestContent"));
         });
     }
 
@@ -96,7 +96,7 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue("TestContent", Expression.of("test_column").isNotEqualTo("TestContent"));
+                .defaultValue("TestContent", Expressions.isNotEqualTo("test_column", "TestContent"));
         });
     }
 
@@ -106,13 +106,13 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue(true, Expression.of("test_column").isEqualTo(true));
+                .defaultValue(true, Expressions.isEqualTo("test_column", true));
         });
     }
 
     @Test void testBooleanDefaultValueIsNotQuoted(@TempDir File tempDir) {
         final Column COLUMN = new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.BOOLEAN, 0, null)
-            .defaultValue(false, Expression.of("test_column").isEqualTo(false));
+            .defaultValue(false, Expressions.isEqualTo("test_column", false));
 
         assertEquals("\"test_column\" BOOLEAN DEFAULT false CHECK (test_column = false)", COLUMN.toString());
     }
@@ -123,7 +123,7 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue("CURRENT_TIMESTAMP", Expression.of("test_column").isEqualTo("CURRENT_TIMESTAMP"));
+                .defaultValue("CURRENT_TIMESTAMP", Expressions.isEqualTo("test_column", "CURRENT_TIMESTAMP"));
         });
 
         assertDoesNotThrow(() -> {
@@ -131,7 +131,7 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue("NULL", Expression.of("test_column").isEqualTo("NULL"));
+                .defaultValue("NULL", Expressions.isEqualTo("test_column", "NULL"));
         });
 
         assertDoesNotThrow(() -> {
@@ -139,7 +139,7 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue("NULL", Expression.of("test_column").isEqualTo("NULL"));
+                .defaultValue("NULL", Expressions.isEqualTo("test_column", "NULL"));
         });
 
         assertDoesNotThrow(() -> {
@@ -147,7 +147,7 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue("CURRENT_TIMESTAMP", Expression.of("test_column").isEqualTo("CURRENT_TIMESTAMP"));
+                .defaultValue("CURRENT_TIMESTAMP", Expressions.isEqualTo("test_column", "CURRENT_TIMESTAMP"));
         });
 
         {
@@ -156,7 +156,7 @@ class ColumnTest {
                     .autoIncrement()
                     .notNull()
                     .unique()
-                    .defaultValue("0000-00-00", Expression.of("test_column").isEqualTo("0000-00-00"));
+                    .defaultValue("0000-00-00", Expressions.isEqualTo("test_column", "0000-00-00"));
             });
             
             assertDoesNotThrow(() -> {
@@ -164,7 +164,7 @@ class ColumnTest {
                     .autoIncrement()
                     .notNull()
                     .unique()
-                    .defaultValue("0000-00-00 00:00:00", Expression.of("test_column").isEqualTo("0000-00-00 00:00:00"));
+                    .defaultValue("0000-00-00 00:00:00", Expressions.isEqualTo("test_column", "0000-00-00 00:00:00"));
             });
         }
         
@@ -174,7 +174,7 @@ class ColumnTest {
                     .autoIncrement()
                     .notNull()
                     .unique()
-                    .defaultValue(new java.util.Date(), Expression.of("test_column").isEqualTo("CURRENT_TIMESTAMP"));
+                    .defaultValue(new java.util.Date(), Expressions.isEqualTo("test_column", "CURRENT_TIMESTAMP"));
             });
 
             assertDoesNotThrow(() -> {
@@ -182,7 +182,7 @@ class ColumnTest {
                     .autoIncrement()
                     .notNull()
                     .unique()
-                    .defaultValue(new java.util.Date(), Expression.of("test_column").isEqualTo("CURRENT_TIMESTAMP"));
+                    .defaultValue(new java.util.Date(), Expressions.isEqualTo("test_column", "CURRENT_TIMESTAMP"));
             });
         }
 
@@ -192,7 +192,7 @@ class ColumnTest {
                     .autoIncrement()
                     .notNull()
                     .unique()
-                    .defaultValue(1225, Expression.of("test_column").isLessThan(100));
+                    .defaultValue(1225, Expressions.isLessThan("test_column", 100));
             });
     
             assertThrows(IllegalArgumentException.class, () -> {
@@ -200,7 +200,7 @@ class ColumnTest {
                     .autoIncrement()
                     .notNull()
                     .unique()
-                    .defaultValue(1225, Expression.of("test_column").isLessThan(100));
+                    .defaultValue(1225, Expressions.isLessThan("test_column", 100));
             });
     
             assertThrows(IllegalArgumentException.class, () -> {
@@ -208,7 +208,7 @@ class ColumnTest {
                     .autoIncrement()
                     .notNull()
                     .unique()
-                    .defaultValue("0000-00-00", Expression.of("test_column").isEqualTo("0000-00-00"));
+                    .defaultValue("0000-00-00", Expressions.isEqualTo("test_column", "0000-00-00"));
             });
         }
     }
@@ -229,7 +229,7 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue(null, Expression.of("test_column").isGreaterThan(0));
+                .defaultValue(null, Expressions.isGreaterThan("test_column", 0));
         });
     }
 
@@ -239,7 +239,7 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue("INVALID_VALUE", Expression.of("test_column").isEqualTo("INVALID_VALUE"));
+                .defaultValue("INVALID_VALUE", Expressions.isEqualTo("test_column", "INVALID_VALUE"));
         });
     }
 
@@ -249,7 +249,7 @@ class ColumnTest {
                 .autoIncrement()
                 .notNull()
                 .unique()
-                .defaultValue(null, Expression.of("test_column").isGreaterThan(0));
+                .defaultValue(null, Expressions.isGreaterThan("test_column", 0));
         });
     }
 

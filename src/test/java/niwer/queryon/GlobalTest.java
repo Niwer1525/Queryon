@@ -4,7 +4,7 @@ import java.util.List;
 
 import niwer.lumen.Console;
 import niwer.queryon.TestUserTable.TestUser;
-import niwer.queryon.queries.Expression;
+import niwer.queryon.queries.Expressions;
 import niwer.queryon.queries.interaction.DeletionManager;
 import niwer.queryon.queries.interaction.InsertionManager;
 import niwer.queryon.queries.interaction.SelectionManager;
@@ -51,13 +51,13 @@ public class GlobalTest {
         {
             /* Select one of the inserted users (Name: Alice) */
             final TestUser SINGLE_USER = SelectionManager.select(DB, TestUserTable.class)
-                .where(Expression.of("name").isEqualTo("Alice"))
+                .where(Expressions.isEqualTo("name", "Alice"))
                 .executeSerializable(TestUser.class);
             Console.log(SINGLE_USER).container(QueryonEngine.LOGGER).send();
 
             /* Select all users with age greater than 26 */
             final List<TestUser> USERS = SelectionManager.selectDistinct(DB, TestUserTable.class)
-                .where(Expression.of("age").isGreaterThan(26))
+                .where(Expressions.isGreaterThan("age", 26))
                 .executeList(TestUser.class);
             Console.log(USERS).container(QueryonEngine.LOGGER).send();
         }
@@ -65,7 +65,7 @@ public class GlobalTest {
         {
             /* Prepare a selection query to check existance of the new user */
             final SelectionManager SELECT_MANAGER = SelectionManager.select(DB, TestUserTable.class)
-                .where(Expression.of("name").isEqualTo("Mia"));
+                .where(Expressions.isEqualTo("name", "Mia"));
 
             /* Insert a new user */
             InsertionManager.insert(DB, TestUserTable.class, "id", "name", "age")
@@ -76,7 +76,7 @@ public class GlobalTest {
 
             /* Delete the new user */
             DeletionManager.delete(DB, TestUserTable.class)
-                .where(Expression.of("name").isEqualTo("Mia"))
+                .where(Expressions.isEqualTo("name", "Mia"))
                 .execute();
 
             Console.log("Does Mia exist after deletion? " + SELECT_MANAGER.executeHasResult()).container(QueryonEngine.LOGGER).send();
@@ -90,18 +90,18 @@ public class GlobalTest {
 
             /* Prepare a selection query to check existance of the new user */
             final TestUser INSERTED_USER = SelectionManager.select(DB, TestUserTable.class)
-                .where(Expression.of("name").isEqualTo("Lou")).executeSerializable(TestUser.class);
+                .where(Expressions.isEqualTo("name", "Lou")).executeSerializable(TestUser.class);
             Console.log(INSERTED_USER).container(QueryonEngine.LOGGER).send();
         
             /* Update the new user's name to Louis */
             UpdateManager.update(DB, TestUserTable.class)
                 .set("name", "Louis")
-                .where(Expression.of("id").isEqualTo(255521))
+                .where(Expressions.isEqualTo("id", 255521))
                 .execute();
 
             /* Check that the user's name has been updated */
             final TestUser UPDATED_USER = SelectionManager.select(DB, TestUserTable.class)
-                .where(Expression.of("id").isEqualTo(255521)).executeSerializable(TestUser.class);
+                .where(Expressions.isEqualTo("id", 255521)).executeSerializable(TestUser.class);
             Console.log(UPDATED_USER).container(QueryonEngine.LOGGER).send();
         }
     }

@@ -17,7 +17,7 @@ import niwer.queryon.QueryonEngine;
 import niwer.queryon.QueryonEngineTest;
 import niwer.queryon.TestUserTable;
 import niwer.queryon.TestUserTable.TestUser;
-import niwer.queryon.queries.Expression;
+import niwer.queryon.queries.Expressions;
 import niwer.queryon.queries.interaction.SelectionManager.EnumOrder;
 
 class SelectionManagerTest {
@@ -39,7 +39,7 @@ class SelectionManagerTest {
         assertEquals("SELECT id, name FROM " + ESCAPED_TABLE_NAME, SELECT_COLUMNS);
 
         final String SELECT_COLUMNS_WHERE = SelectionManager.select(DB, TestUserTable.class, "id", "name")
-            .where(Expression.of("age").isGreaterThan(25))
+            .where(Expressions.isGreaterThan("age", 25))
             .limit(25)
             .buildQuery();
         assertEquals("SELECT id, name FROM " + ESCAPED_TABLE_NAME + " WHERE age > 25 LIMIT 25", SELECT_COLUMNS_WHERE);
@@ -52,7 +52,7 @@ class SelectionManagerTest {
         assertEquals("SELECT id, name FROM " + ESCAPED_TABLE_NAME + " ORDER BY id ASC, email ASC, name DESC", SELECT_COLUMNS_ORDER_BY);
 
         final String SELECT_COLUMNS_ORDER_BY_WHERE = SelectionManager.select(DB, TestUserTable.class, "id", "name")
-            .where(Expression.of("age").isGreaterThan(25))
+            .where(Expressions.isGreaterThan("age", 25))
             .orderBy("id", EnumOrder.ASC)
             .orderBy("email", EnumOrder.ASC)
             .orderBy("name", EnumOrder.DESC)
@@ -83,7 +83,7 @@ class SelectionManagerTest {
             .rows(InsertionManager.of(1, "Alice", 30), InsertionManager.of(2, "Bob", 25), InsertionManager.of(3, "Carol", 28))
             .execute();
         
-        final TestUser SINGLE_USER = SelectionManager.select(DB, TestUserTable.class).where(Expression.of("name").isEqualTo("Alice")).executeSerializable(TestUser.class);
+        final TestUser SINGLE_USER = SelectionManager.select(DB, TestUserTable.class).where(Expressions.isEqualTo("name", "Alice")).executeSerializable(TestUser.class);
         assertEquals("Alice", SINGLE_USER.name());
         
         final List<TestUser> USERS = SelectionManager.select(DB, TestUserTable.class).executeList(TestUser.class);
@@ -92,12 +92,12 @@ class SelectionManagerTest {
         assertEquals("Bob", USERS.get(1).name());
         assertEquals("Carol", USERS.get(2).name());
 
-        assertTrue(SelectionManager.select(DB, TestUserTable.class, "id").where(Expression.of("id").isEqualTo(1)).executeHasResult());
+        assertTrue(SelectionManager.select(DB, TestUserTable.class, "id").where(Expressions.isEqualTo("id", 1)).executeHasResult());
 
         assertEquals(3, SelectionManager.select(DB, TestUserTable.class, "id").executeCountResults());
 
         final int ID = SelectionManager.select(DB, TestUserTable.class, "id")
-            .where(Expression.of("id").isEqualTo(1))
+            .where(Expressions.isEqualTo("id", 1))
             .executePrimitive(int.class);
         assertEquals(1, ID);
     }

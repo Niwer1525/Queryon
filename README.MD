@@ -130,63 +130,86 @@ manager.deleteOldBackups();
 ```
 
 ### Expressions
-Expression is the base class for all expressions in Queryon. It can be used to build complex expressions using a fluent API. For example, you can build a simple expression like this:
-```java
-Expression ageGreaterThan18 = Expression.of("age").isGreaterThan(18);
-```
-That correspond to the SQL expression `age > 18`. You can also combine expressions using logical operators like AND and OR:
-```java
-Expression ageGreaterThan18AndNameStartsWithA = ageGreaterThan18.and(Expression.of("name").like("A%"));
-```
-That correspond to the SQL expression `age > 18 AND name LIKE 'A%'`.
-
-Here a few more complex examples :
-```java
-Expression complexExpression = Expression.of("age").isGreaterThan(18)
-    .and(Expression.of("name").like("A%"))
-    .or(Expression.of("city").isEqualTo("New York"));
-```
-This correspond to the SQL expression `((age > 18 AND name LIKE 'A%') OR city = 'New York')`.
+You can use the `Expressions` class to create expressions. The `Expressions` class provides static methods to create expressions for different types of comparisons, such as equality, inequality, greater than, less than, etc.
 
 ```java
-Expression isGreaterThan = Expression.of("age").isGreaterThan(18);
-Expression startWith = Expression.of("name").like("A%");
-
-Expression isGreaterThanAlias = Expression.of("age").isGreaterThan(25);
-Expression startWithAlias = Expression.of("name").like("B%");
-
-
-isGreaterThan.and(startWith).or(isGreaterThanAlias).or(startWithAlias);
+Expressions.isEqualTo("age", 30); // age = 30
+Expressions.isNotEqualTo("age", 30); // age <> 30
+Expressions.isGreaterThan("age", 30); // age > 30
+Expressions.isGreaterThanOrEqualTo("age", 30); // age >= 30
+Expressions.isLessThan("age", 30); // age < 30
+Expressions.isLessThanOrEqualTo("age", 30); // age <= 30
+Expressions.in("age", 30, 40, 50); // age IN (30, 40, 50)
 ```
-This correspond to the SQL expression `((age > 18 AND name LIKE 'A%') OR age > 25 OR name LIKE 'B%')`.
 
+Here are few more complex examples :
 ```java
-Expression isGreaterThan = Expression.of("age").isGreaterThan(18);
-Expression startWith = Expression.of("name").like("A%");
+Expressions.and(
+    Expressions.isGreaterThan("age", 30),
+    Expressions.isLessThan("age", 40)
+); // age > 30 AND age < 40
 
-Expression isGreaterThanAlias = Expression.of("age").isGreaterThan(25);
-Expression startWithAlias = Expression.of("name").like("B%");
-
-
-isGreaterThan.and(startWith).or(isGreaterThanAlias.and(startWithAlias));
+Expressions.or(
+    Expressions.isEqualTo("name", "Alice"),
+    Expressions.isEqualTo("name", "Bob")
+); // name = 'Alice' OR name = 'Bob'
 ```
-This correspond to the SQL expression `((age > 18 AND name LIKE 'A%') OR (age > 25 AND name LIKE 'B%'))`.
+
+You can also create expressions that combines multiple `and` and `or`!
+```java
+Expressions.or(
+    Expressions.and(
+        Expressions.isGreaterThan("age", 30),
+        Expressions.isLessThan("age", 40)
+    ),
+    Expressions.isEqualTo("name", "Alice")
+); // (age > 30 AND age < 40) OR name = 'Alice'
+
+Expressions.and(
+    Expressions.or(
+        Expressions.isEqualTo("name", "Alice"),
+        Expressions.isEqualTo("name", "Bob")
+    ),
+    Expressions.isGreaterThan("age", 30)
+); // (name = 'Alice' OR name = 'Bob') AND age > 30
+
+Expressions.and(
+    Expressions.or(
+        Expressions.isEqualTo("name", "Alice"),
+        Expressions.isEqualTo("name", "Bob")
+    ),
+    Expressions.or(
+        Expressions.isGreaterThan("age", 30),
+        Expressions.isLessThan("age", 20)
+    )
+); // (name = 'Alice' OR name = 'Bob') AND (age > 30 OR age < 20)
+
+Expressions.or(
+    Expressions.and(
+        Expressions.isEqualTo("name", "Alice"),
+        Expressions.isGreaterThan("age", 30)
+    ),
+    Expressions.and(
+        Expressions.isEqualTo("name", "Bob"),
+        Expressions.isLessThan("age", 20)
+    )
+); // (name = 'Alice' AND age > 30) OR (name = 'Bob' AND age < 20)
+```
 
 Here's the list of all the supported expressions :
 ```java
-final Expression EXPRESSION = Expression.of("age");
-EXPRESSION.isNull();
-EXPRESSION.isNotNull();
-EXPRESSION.isGreaterThan(30);
-EXPRESSION.isGreaterThanOrEqualTo(30);
-EXPRESSION.isLessThan(30);
-EXPRESSION.isLessThanOrEqualTo(30);
-EXPRESSION.isEqualTo(30);
-EXPRESSION.isNotEqualTo(30);
-EXPRESSION.in("Alice", "Bob");
-EXPRESSION.in(TestStatus.class);
-EXPRESSION.like("A%");
-EXPRESSION.between(25, 35);
+Expressions.isNull("age");
+Expressions.isNotNull("age");
+Expressions.isGreaterThan("age", 30);
+Expressions.isGreaterThanOrEqualTo("age", 30);
+Expressions.isLessThan("age", 30);
+Expressions.isLessThanOrEqualTo("age", 30);
+Expressions.isEqualTo("age", 30);
+Expressions.isNotEqualTo("age", 30);
+Expressions.in("age", "Alice", "Bob");
+Expressions.in("age", TestStatus.class);
+Expressions.like("age", "A%");
+Expressions.between("age", 25, 35);
 ```
 
 ### Objects to SQL and SQL to Objects

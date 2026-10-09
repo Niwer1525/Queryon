@@ -12,7 +12,7 @@ import niwer.queryon.DataBase;
 import niwer.queryon.QueryonEngine;
 import niwer.queryon.QueryonEngineTest;
 import niwer.queryon.TestUserTable;
-import niwer.queryon.queries.Expression;
+import niwer.queryon.queries.Expressions;
 
 class DeletionManagerTest {
 
@@ -25,7 +25,7 @@ class DeletionManagerTest {
         assertEquals("DELETE FROM " + ESCAPED_TABLE_NAME, DELETE);
 
         final String DELETE_WHERE = DeletionManager.delete(DB, TestUserTable.class)
-            .where(Expression.of("name").like("%A%"))
+            .where(Expressions.like("name", "%A%"))
             .buildQuery();
         assertEquals("DELETE FROM " + ESCAPED_TABLE_NAME + " WHERE name LIKE '%A%'", DELETE_WHERE);
     }
@@ -35,7 +35,7 @@ class DeletionManagerTest {
 
         assertDoesNotThrow(() -> {
             DeletionManager.delete(DB, TestUserTable.class)
-                .where(Expression.of("name").like("%A%"))
+                .where(Expressions.like("name", "%A%"))
                 .execute();
         });
     }

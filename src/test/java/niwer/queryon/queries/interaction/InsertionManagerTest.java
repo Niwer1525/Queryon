@@ -15,7 +15,7 @@ import niwer.queryon.QueryonEngineTest;
 import niwer.queryon.SQLSerializable;
 import niwer.queryon.TestUserTable;
 import niwer.queryon.TestUserTable.TestUser;
-import niwer.queryon.queries.Expression;
+import niwer.queryon.queries.Expressions;
 
 class InsertionManagerTest {
 
@@ -44,7 +44,7 @@ class InsertionManagerTest {
         final String INSERT_DO_UPDATE = InsertionManager.insertOrIgnore(DB, TestUserTable.class, "id", "name", "age")
             .row(1, "Alice", 30)
             .onConflictDoUpdate(
-                UpdateManager.update(DB, TestUserTable.class).set("name", "Alice Updated").where(Expression.of("id").isEqualTo(1))
+                UpdateManager.update(DB, TestUserTable.class).set("name", "Alice Updated").where(Expressions.isEqualTo("id", 1))
             )
             .buildQuery();
         assertEquals("INSERT OR IGNORE INTO " + ESCAPED_TABLE_NAME + " (id, name, age) VALUES (1, 'Alice', 30) ON CONFLICT DO UPDATE SET name = 'Alice Updated' WHERE id = 1", INSERT_DO_UPDATE);

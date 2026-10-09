@@ -15,7 +15,7 @@ import niwer.queryon.QueryonEngine;
 import niwer.queryon.QueryonEngineTest;
 import niwer.queryon.TestUserTable;
 import niwer.queryon.TestUserTable.TestUser;
-import niwer.queryon.queries.Expression;
+import niwer.queryon.queries.Expressions;
 
 class UpdateManagerTest {
 
@@ -40,14 +40,14 @@ class UpdateManagerTest {
         final String UPDATE_WHERE = UpdateManager.update(DB, TestUserTable.class)
             .set("name", "Alice")
             .set("age", 30)
-            .where(Expression.of("id").isEqualTo(1))
+            .where(Expressions.isEqualTo("id", 1))
             .buildQuery();
         assertEquals("UPDATE " + ESCAPED_TABLE_NAME + " SET name = 'Alice', age = 30 WHERE id = 1", UPDATE_WHERE);
 
         final String UPDATE_WHERE_AND_SET_EXPRESSION = UpdateManager.update(DB, TestUserTable.class)
             .set("name", "Alice")
             .set("age", QueryonEngine.raw("age + 5 * 2.5"))
-            .where(Expression.of("id").isEqualTo(1))
+            .where(Expressions.isEqualTo("id", 1))
             .buildQuery();
         assertEquals("UPDATE " + ESCAPED_TABLE_NAME + " SET name = 'Alice', age = age + 5 * 2.5 WHERE id = 1", UPDATE_WHERE_AND_SET_EXPRESSION);
 
@@ -57,11 +57,11 @@ class UpdateManagerTest {
         assertEquals("UPDATE " + ESCAPED_TABLE_NAME + " SET name = '2026-03-20T19:59:29'", UPDATE_ISO_TIMESTAMP_LITERAL);
 
         final SelectionManager SELECT_DISTINCT = SelectionManager.selectDistinct(DB, TestUserTable.class)
-            .where(Expression.of("age").isGreaterThan(25));
+            .where(Expressions.isGreaterThan("age", 25));
         final String UPDATE_SUBQUERY = UpdateManager.update(DB, TestUserTable.class)
             .set("name", "Alice")
             .set("age", SELECT_DISTINCT)
-            .where(Expression.of("id").isEqualTo(1))
+            .where(Expressions.isEqualTo("id", 1))
             .buildQuery();
         assertEquals("UPDATE " + ESCAPED_TABLE_NAME + " SET name = 'Alice', age = (SELECT DISTINCT * FROM " + ESCAPED_TABLE_NAME + " WHERE age > 25) WHERE id = 1", UPDATE_SUBQUERY);
     }
@@ -72,22 +72,22 @@ class UpdateManagerTest {
         
         assertThrows(IllegalArgumentException.class, () -> UpdateManager.update(DB, TestUserTable.class)
             .set("", SELECT_DISTINCT)
-            .where(Expression.of("id").isEqualTo(1))
+            .where(Expressions.isEqualTo("id", 1))
             .buildQuery());
 
         assertThrows(IllegalArgumentException.class, () -> UpdateManager.update(DB, TestUserTable.class)
             .set(null, SELECT_DISTINCT)
-            .where(Expression.of("id").isEqualTo(1))
+            .where(Expressions.isEqualTo("id", 1))
             .buildQuery());
 
         assertThrows(IllegalArgumentException.class, () -> UpdateManager.update(DB, TestUserTable.class)
             .set("", "Alice")
-            .where(Expression.of("id").isEqualTo(1))
+            .where(Expressions.isEqualTo("id", 1))
             .buildQuery());
 
         assertThrows(IllegalArgumentException.class, () -> UpdateManager.update(DB, TestUserTable.class)
             .set(null, "Alice")
-            .where(Expression.of("id").isEqualTo(1))
+            .where(Expressions.isEqualTo("id", 1))
             .buildQuery());
     }
 
@@ -109,12 +109,12 @@ class UpdateManagerTest {
             .row(1, "Alice", 30)
             .execute();
         
-        final TestUser SINGLE_USER = SelectionManager.select(DB, TestUserTable.class).where(Expression.of("name").isEqualTo("Alice")).executeSerializable(TestUser.class);
+        final TestUser SINGLE_USER = SelectionManager.select(DB, TestUserTable.class).where(Expressions.isEqualTo("name", "Alice")).executeSerializable(TestUser.class);
         assertNotNull(SINGLE_USER);
         assertEquals("Alice", SINGLE_USER.name());
         
-        UpdateManager.update(DB, TestUserTable.class).set("name", "Bob").where(Expression.of("id").isEqualTo(1)).execute();
-        assertEquals("Bob", SelectionManager.select(DB, TestUserTable.class).where(Expression.of("id").isEqualTo(1)).executeSerializable(TestUser.class).name());
+        UpdateManager.update(DB, TestUserTable.class).set("name", "Bob").where(Expressions.isEqualTo("id", 1)).execute();
+        assertEquals("Bob", SelectionManager.select(DB, TestUserTable.class).where(Expressions.isEqualTo("id", 1)).executeSerializable(TestUser.class).name());
     }
 
     @Test void testUpdateManagerSetFromSerializable(@TempDir File tempDir) {
@@ -124,11 +124,11 @@ class UpdateManagerTest {
             .row(1, "Alice", 30)
             .execute();
 
-        final TestUser SINGLE_USER = SelectionManager.select(DB, TestUserTable.class).where(Expression.of("name").isEqualTo("Alice")).executeSerializable(TestUser.class);
+        final TestUser SINGLE_USER = SelectionManager.select(DB, TestUserTable.class).where(Expressions.isEqualTo("name", "Alice")).executeSerializable(TestUser.class);
         assertNotNull(SINGLE_USER);
         assertEquals("Alice", SINGLE_USER.name());
         
-        UpdateManager.update(DB, TestUserTable.class).set(SINGLE_USER).where(Expression.of("id").isEqualTo(1)).execute();
-        assertEquals("Alice", SelectionManager.select(DB, TestUserTable.class).where(Expression.of("id").isEqualTo(1)).executeSerializable(TestUser.class).name());
+        UpdateManager.update(DB, TestUserTable.class).set(SINGLE_USER).where(Expressions.isEqualTo("id", 1)).execute();
+        assertEquals("Alice", SelectionManager.select(DB, TestUserTable.class).where(Expressions.isEqualTo("id", 1)).executeSerializable(TestUser.class).name());
     }
 }

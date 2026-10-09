@@ -1,6 +1,6 @@
 package niwer.queryon;
 
-import niwer.queryon.queries.Expression;
+import niwer.queryon.queries.Expressions;
 import niwer.queryon.tables.EnumColumnTypes;
 import niwer.queryon.tables.Table;
 import niwer.queryon.tables.api.IColumnField;
@@ -17,7 +17,7 @@ public class TestUserTable extends Table {
             createColumn(db, "age", EnumColumnTypes.INT)
         )
         .addCheckConstraints(
-            Expression.of("age").isGreaterThanOrEqualTo(0) // Age must be non-negative
+            Expressions.isGreaterThanOrEqualTo("age", 0) // Age must be non-negative
         )
         .execute(); // Execute the table creation in the database
 

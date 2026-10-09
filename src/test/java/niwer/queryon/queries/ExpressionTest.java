@@ -12,95 +12,86 @@ class ExpressionTest {
     }
 
     @Test void createGreaterThanExpression() {
-        final Expression EXPRESSION = Expression.of("age").isGreaterThan(30);
+        final Expression EXPRESSION = Expressions.isGreaterThan("age", 30);
         assertExpressionEquals("age > 30", EXPRESSION);
 
-        assertThrows(IllegalArgumentException.class, () -> Expression.of("age").isGreaterThan(null));
+        assertThrows(IllegalArgumentException.class, () -> Expressions.isGreaterThan("age", null));
     }
 
     @Test void createGreaterThanOrEqualToExpression() {
-        final Expression EXPRESSION = Expression.of("age").isGreaterThanOrEqualTo(30);
+        final Expression EXPRESSION = Expressions.isGreaterThanOrEqualTo("age", 30);
         assertExpressionEquals("age >= 30", EXPRESSION);
 
-        assertThrows(IllegalArgumentException.class, () -> Expression.of("age").isGreaterThanOrEqualTo(null));
+        assertThrows(IllegalArgumentException.class, () -> Expressions.isGreaterThanOrEqualTo("age", null));
     }
 
     @Test void createLessThanExpression() {
-        final Expression EXPRESSION = Expression.of("age").isLessThan(30);
+        final Expression EXPRESSION = Expressions.isLessThan("age", 30);
         assertExpressionEquals("age < 30", EXPRESSION);
 
-        assertThrows(IllegalArgumentException.class, () -> Expression.of("age").isLessThan(null));
+        assertThrows(IllegalArgumentException.class, () -> Expressions.isLessThan("age", null));
     }
 
     @Test void createLessThanOrEqualToExpression() {
-        final Expression EXPRESSION = Expression.of("age").isLessThanOrEqualTo(30);
+        final Expression EXPRESSION = Expressions.isLessThanOrEqualTo("age", 30);
         assertExpressionEquals("age <= 30", EXPRESSION);
 
-        assertThrows(IllegalArgumentException.class, () -> Expression.of("age").isLessThanOrEqualTo(null));
+        assertThrows(IllegalArgumentException.class, () -> Expressions.isLessThanOrEqualTo("age", null));
     }
 
     @Test void createEqualToExpression() {
-        final Expression EXPRESSION = Expression.of("name").isEqualTo("Alice");
+        final Expression EXPRESSION = Expressions.isEqualTo("name", "Alice");
         assertExpressionEquals("name = 'Alice'", EXPRESSION);
 
-        final Expression EXPRESSION_NULL = Expression.of("name").isEqualTo(null);
-        assertExpressionEquals("name = 'NULL'", EXPRESSION_NULL);
+        final Expression EXPRESSION_NULL = Expressions.isEqualTo("name", null);
+        assertExpressionEquals("name IS NULL", EXPRESSION_NULL);
 
-        final Expression EXPRESSION_OTHER = Expression.of("name").isEqualTo(25);
+        final Expression EXPRESSION_OTHER = Expressions.isEqualTo("name", 25);
         assertExpressionEquals("name = 25", EXPRESSION_OTHER);
     }
 
     @Test void createNotEqualToExpression() {
-        final Expression EXPRESSION = Expression.of("name").isNotEqualTo("Alice");
+        final Expression EXPRESSION = Expressions.isNotEqualTo("name", "Alice");
         assertExpressionEquals("name <> 'Alice'", EXPRESSION);
 
-        final Expression EXPRESSION_NULL = Expression.of("name").isNotEqualTo(null);
-        assertExpressionEquals("name <> 'NULL'", EXPRESSION_NULL);
+        final Expression EXPRESSION_NULL = Expressions.isNotEqualTo("name", null);
+        assertExpressionEquals("name IS NOT NULL", EXPRESSION_NULL);
 
-        final Expression EXPRESSION_OTHER = Expression.of("name").isNotEqualTo(25);
+        final Expression EXPRESSION_OTHER = Expressions.isNotEqualTo("name", 25);
         assertExpressionEquals("name <> 25", EXPRESSION_OTHER);
     }
 
-    @Test void createExpressionGetNullSQL() {
-        assertThrows(IllegalStateException.class, Expression.of("email")::toString);
-    }
-
     @Test void createExpression() {
-        final Expression EXPRESSION = Expression.of("age").isGreaterThan(30);
+        final Expression EXPRESSION = Expressions.isGreaterThan("age", 30);
         assertExpressionEquals("age > 30", EXPRESSION);
     }
 
     @Test void createStringExpression() {
-        final Expression EXPRESSION = Expression.of("name").isEqualTo("Alice");
+        final Expression EXPRESSION = Expressions.isEqualTo("name", "Alice");
         assertExpressionEquals("name = 'Alice'", EXPRESSION);
     }
 
     @Test void createNullExpression() {
-        final Expression EXPRESSION = Expression.of("email").isNull();
+        final Expression EXPRESSION = Expressions.isNull("email");
         assertExpressionEquals("email IS NULL", EXPRESSION);
     }
 
     @Test void createNotNullExpression() {
-        final Expression EXPRESSION = Expression.of("email").isNotNull();
+        final Expression EXPRESSION = Expressions.isNotNull("email");
         assertExpressionEquals("email IS NOT NULL", EXPRESSION);
     }
 
-    @Test void createAlreadyDefinedExpresion() {
-        final Expression EXPRESSION = Expression.of("age").isGreaterThan(30);
-        assertThrows(IllegalStateException.class, () -> EXPRESSION.isLessThanOrEqualTo(40));
-    }
-
     @Test void createInExpression() {
-        final Expression EXPRESSION = Expression.of("status").in(TestStatus.class);
+        final Expression EXPRESSION = Expressions.in("status", TestStatus.class);
         assertExpressionEquals("status IN ('ACTIVE', 'INACTIVE', 'PENDING')", EXPRESSION);
     }
 
     @Test void createInExpressionWithNullEnum() {
-        assertThrows(IllegalArgumentException.class, () -> Expression.of("status").in((Class<? extends Enum<?>>)null));
+        assertThrows(IllegalArgumentException.class, () -> Expressions.in("status", (Class<? extends Enum<?>>)null));
     }
 
     @Test void createInExpressionWithEmptyEnum() {
-        assertThrows(IllegalArgumentException.class, () -> Expression.of("status").in(EmptyEnum.class));
+        assertThrows(IllegalArgumentException.class, () -> Expressions.in("status", EmptyEnum.class));
     }
 
     private enum EmptyEnum {}
@@ -112,115 +103,84 @@ class ExpressionTest {
     }
 
     @Test void createInExpressionWithValues() {
-        final Expression EXPRESSION = Expression.of("id").in(1, 2, 3);
+        final Expression EXPRESSION = Expressions.in("id", 1, 2, 3);
         assertExpressionEquals("id IN (1, 2, 3)", EXPRESSION);
     }
 
     @Test void createInExpressionWithStringValues() {
-        final Expression EXPRESSION = Expression.of("name").in("Alice", "Bob", "Charlie");
+        final Expression EXPRESSION = Expressions.in("name", "Alice", "Bob", "Charlie");
         assertExpressionEquals("name IN ('Alice', 'Bob', 'Charlie')", EXPRESSION);
     }
 
     @Test void createInExpressionWithNullValues() {
-        assertThrows(IllegalArgumentException.class, () -> Expression.of("id").in((Object[])null));
+        assertThrows(IllegalArgumentException.class, () -> Expressions.in("id", (Object[])null));
     }
 
     @Test void createInExpressionWithEmptyValues() {
-        assertThrows(IllegalArgumentException.class, () -> Expression.of("id").in());
+        assertThrows(IllegalArgumentException.class, () -> Expressions.in("id"));
     }
 
     @Test void createInExpressionWithMixedValues() {
-        Expression expression = Expression.of("id").in(1, "two", 3);
+        Expression expression = Expressions.in("id", 1, "two", 3);
         assertExpressionEquals("id IN (1, 'two', 3)", expression);
     }
 
     @Test void createInExpressionWithMixedStringValues() {
-        final Expression EXPRESSION = Expression.of("name").in("Alice", null, "Charlie");
-        assertExpressionEquals("name IN ('Alice', 'NULL', 'Charlie')", EXPRESSION);
+        final Expression EXPRESSION = Expressions.in("name", "Alice", null, "Charlie");
+        assertExpressionEquals("name IN ('Alice', NULL, 'Charlie')", EXPRESSION);
     }
 
     @Test void testLikeExpressionWithNullPattern() {
-        assertThrows(IllegalArgumentException.class, () -> Expression.of("name").like(null));
+        assertThrows(IllegalArgumentException.class, () -> Expressions.like("name", null));
     }
 
     @Test void testLikeExpression() {
-        final Expression EXPRESSION = Expression.of("name").like("A%");
+        final Expression EXPRESSION = Expressions.like("name", "A%");
         assertExpressionEquals("name LIKE 'A%'", EXPRESSION);
 
-        final Expression EXPRESSION2 = Expression.of("name").like("%son");
+        final Expression EXPRESSION2 = Expressions.like("name", "%son");
         assertExpressionEquals("name LIKE '%son'", EXPRESSION2);
 
-        final Expression EXPRESSION3 = Expression.of("name").like("%ann%");
+        final Expression EXPRESSION3 = Expressions.like("name", "%ann%");
         assertExpressionEquals("name LIKE '%ann%'", EXPRESSION3);
     }
 
     @Test void testBetweenExpression() {
-        final Expression EXPRESSION3 = Expression.of("name").between(25, 35);
+        final Expression EXPRESSION3 = Expressions.between("name", 25, 35);
         assertExpressionEquals("name BETWEEN 25 AND 35", EXPRESSION3);
     }
 
     @Test void testBetweenExpressionWithNullValues() {
-        assertThrows(IllegalArgumentException.class, () -> Expression.of("name").between(null, 35));
-        assertThrows(IllegalArgumentException.class, () -> Expression.of("name").between(25, null));
-    }
-
-    @Test void testEmptyNullAnd() {
-        final Expression EXPRESSION1 = Expression.of("age").isGreaterThan(30);
-        assertThrows(IllegalArgumentException.class, () -> EXPRESSION1.and(null));
-        assertThrows(IllegalArgumentException.class, () -> EXPRESSION1.or(null));
+        assertThrows(IllegalArgumentException.class, () -> Expressions.between("name", null, 35));
+        assertThrows(IllegalArgumentException.class, () -> Expressions.between("name", 25, null));
     }
 
     @Test void testAndExpression() {
-        final Expression EXPRESSION1 = Expression.of("age").isGreaterThan(30);
-        final Expression EXPRESSION2 = Expression.of("status").isEqualTo("ACTIVE");
-        final Expression AND_EXPRESSION = EXPRESSION1.and(EXPRESSION2);
-        assertExpressionEquals("(age > 30 AND status = 'ACTIVE')", AND_EXPRESSION);
+        final Expression EXPRESSION1 = Expressions.isGreaterThan("age", 30);
+        final Expression EXPRESSION2 = Expressions.isEqualTo("status", "ACTIVE");
+        assertExpressionEquals("(age > 30 AND status = 'ACTIVE')", Expressions.and(EXPRESSION1, EXPRESSION2));
     }
 
     @Test void testOrExpression() {
-        final Expression EXPRESSION1 = Expression.of("age").isGreaterThan(30);
-        final Expression EXPRESSION2 = Expression.of("status").isEqualTo("ACTIVE");
-        final Expression OR_EXPRESSION = EXPRESSION1.or(EXPRESSION2);
-        assertExpressionEquals("(age > 30 OR status = 'ACTIVE')", OR_EXPRESSION);
+        final Expression EXPRESSION1 = Expressions.isGreaterThan("age", 30);
+        final Expression EXPRESSION2 = Expressions.isEqualTo("status", "ACTIVE");
+        assertExpressionEquals("(age > 30 OR status = 'ACTIVE')", Expressions.or(EXPRESSION1, EXPRESSION2));
     }
 
     @Test void testComplexExpression() {
-        final Expression EXPRESSION1 = Expression.of("age").isGreaterThan(30);
-        final Expression EXPRESSION2 = Expression.of("status").isEqualTo("ACTIVE");
-        final Expression EXPRESSION3 = Expression.of("name").isEqualTo("Alice");
-        final Expression COMPLEX_EXPRESSION = EXPRESSION1.and(EXPRESSION2).or(EXPRESSION3);
+        final Expression EXPRESSION1 = Expressions.isGreaterThan("age", 30);
+        final Expression EXPRESSION2 = Expressions.isEqualTo("status", "ACTIVE");
+        final Expression EXPRESSION3 = Expressions.isEqualTo("name", "Alice");
+        final Expression COMPLEX_EXPRESSION = Expressions.or(
+            Expressions.and(EXPRESSION1, EXPRESSION2),
+            EXPRESSION3
+        );
         assertExpressionEquals("((age > 30 AND status = 'ACTIVE') OR name = 'Alice')", COMPLEX_EXPRESSION);
     }
 
-    @Test void testExpressionAlreadyDefined() {
-        final Expression EXPRESSION = Expression.of("age").isGreaterThan(30);
-
-        assertThrows(IllegalStateException.class, () -> EXPRESSION.isNull());
-        assertThrows(IllegalStateException.class, () -> EXPRESSION.isNotNull());
-        assertThrows(IllegalStateException.class, () -> EXPRESSION.isGreaterThan(30));
-        assertThrows(IllegalStateException.class, () -> EXPRESSION.isGreaterThanOrEqualTo(30));
-        assertThrows(IllegalStateException.class, () -> EXPRESSION.isLessThan(30));
-        assertThrows(IllegalStateException.class, () -> EXPRESSION.isLessThanOrEqualTo(30));
-        assertThrows(IllegalStateException.class, () -> EXPRESSION.isEqualTo(30));
-        assertThrows(IllegalStateException.class, () -> EXPRESSION.isNotEqualTo(30));
-        assertThrows(IllegalStateException.class, () -> EXPRESSION.in("Alice", "Bob"));
-        assertThrows(IllegalStateException.class, () -> EXPRESSION.in(TestStatus.class));
-        assertThrows(IllegalStateException.class, () -> EXPRESSION.like("A%"));
-        assertThrows(IllegalStateException.class, () -> EXPRESSION.between(25, 35));
-    }
-
-    @Test void testEmptyNullColumnName() {
-        assertThrows(IllegalArgumentException.class, () -> Expression.of((String)null));
-        assertThrows(IllegalArgumentException.class, () -> Expression.of(""));
-    }
-
     @Test void hashCodeTest() {
-        final Expression EXPRESSION1 = Expression.of("age").isGreaterThan(30);
-        final Expression EXPRESSION2 = Expression.of("age").isGreaterThan(30);
+        final Expression EXPRESSION1 = Expressions.isGreaterThan("age", 30);
+        final Expression EXPRESSION2 = Expressions.isGreaterThan("age", 30);
         assertEquals(EXPRESSION1.hashCode(), EXPRESSION2.hashCode());
-
-        final Expression EXPRESSION3 = Expression.of("age");
-        final Expression EXPRESSION4 = Expression.of("age");
-        assertEquals(EXPRESSION3.hashCode(), EXPRESSION4.hashCode());
     }
 }

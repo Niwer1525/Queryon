@@ -16,7 +16,7 @@ import niwer.queryon.QueryonEngineTest;
 import niwer.queryon.QueryonEngineTest.TestEnum;
 import niwer.queryon.SQLSerializable;
 import niwer.queryon.TestFoodTable;
-import niwer.queryon.queries.Expression;
+import niwer.queryon.queries.Expressions;
 import niwer.queryon.tables.api.IColumnField;
 import niwer.queryon.tables.api.IForeignKey;
 
@@ -42,7 +42,7 @@ class TableTest {
         };
         assertDoesNotThrow(() -> TABLE
             .addColumn(Table.createColumn(DB, "int_column", EnumColumnTypes.INT))
-            .addCheckConstraint(Expression.of("int_column").isEqualTo(25))
+            .addCheckConstraint(Expressions.isEqualTo("int_column", 25))
             .execute()
         );
     }
