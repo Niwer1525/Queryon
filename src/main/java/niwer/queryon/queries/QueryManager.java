@@ -243,17 +243,22 @@ public class QueryManager {
                 if (primitiveType == double.class || primitiveType == Double.class) return result.getDouble(1);
                 if (primitiveType == float.class || primitiveType == Float.class) return result.getFloat(1);
                 if (primitiveType == String.class) return result.getString(1);
+
+                /* Time/Date types */
                 if (primitiveType == java.sql.Date.class || primitiveType == java.util.Date.class) return result.getDate(1);
                 if (primitiveType == java.sql.Timestamp.class) return result.getTimestamp(1);
                 if (primitiveType == java.sql.Time.class) return result.getTime(1);
                 if (primitiveType == byte[].class) return result.getBytes(1);
+                
+                /* Numeric types */
+                if (primitiveType == java.math.BigDecimal.class) return result.getBigDecimal(1);
 
                 throw new IllegalArgumentException("Unsupported primitive type: " + primitiveType.getName());
             } catch (Exception e) {
                 throw new QueryonException("Error occurred while converting primitive result.", e);
             }
         }, sql, true, params);
-        if (RESULT == null) throw new IllegalStateException("Expected a single value result, but got null.");
+        if (RESULT == null) return null; // If the result is null, return null
         
         final Class<?> WRAPPED = QueryonEngine.wrap(primitiveType); // Wrap the primitive type to its corresponding wrapper class
         if (WRAPPED.isInstance(RESULT)) {
