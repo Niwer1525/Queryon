@@ -237,11 +237,16 @@ public class QueryManager {
 
                 /* Convert the value to the expected primitive type */
                 if (primitiveType == boolean.class || primitiveType == Boolean.class) return result.getBoolean(1);
+                if (primitiveType == short.class || primitiveType == Short.class) return result.getShort(1);
                 if (primitiveType == int.class || primitiveType == Integer.class) return result.getInt(1);
                 if (primitiveType == long.class || primitiveType == Long.class) return result.getLong(1);
                 if (primitiveType == double.class || primitiveType == Double.class) return result.getDouble(1);
                 if (primitiveType == float.class || primitiveType == Float.class) return result.getFloat(1);
                 if (primitiveType == String.class) return result.getString(1);
+                if (primitiveType == java.sql.Date.class || primitiveType == java.util.Date.class) return result.getDate(1);
+                if (primitiveType == java.sql.Timestamp.class) return result.getTimestamp(1);
+                if (primitiveType == java.sql.Time.class) return result.getTime(1);
+                if (primitiveType == byte[].class) return result.getBytes(1);
 
                 throw new IllegalArgumentException("Unsupported primitive type: " + primitiveType.getName());
             } catch (Exception e) {
