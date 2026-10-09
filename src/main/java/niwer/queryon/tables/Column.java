@@ -223,6 +223,8 @@ public class Column {
 
     private final Object convertTObject(String str) {
         if (str == null || str.isEmpty()) return null;
+        if (str.equalsIgnoreCase("NULL")) return null; // Represents no DEFAULT clause attached to this column
+
         return switch (this.TYPE) {
             case ENUM -> {
                 if (ENUM_VALUES_NAMES == null || ENUM_VALUES_NAMES.length == 0) throw new IllegalStateException("ENUM column has no defined values for column " + ESCAPED_NAME);
