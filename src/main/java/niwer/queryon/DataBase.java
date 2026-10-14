@@ -35,6 +35,7 @@ public class DataBase {
     private final Set<Table> REGISTERED_TABLES = new HashSet<>();
     private Connection sqlConnection = null;
     private ConnectionMode connectionMode = ConnectionMode.PERSISTENT;
+    private boolean automaticSchemaSync = true;
     
     /**
      * Create a new DataBase
@@ -85,6 +86,23 @@ public class DataBase {
         if (connectionMode == null) throw new IllegalArgumentException("Connection mode cannot be null");
         this.connectionMode = connectionMode;
         if (connectionMode == ConnectionMode.PER_QUERY) this.disconnect();
+        return this;
+    }
+
+    public boolean automaticSchemaSync() {
+        return this.automaticSchemaSync;
+    }
+
+    /**
+     * Set whether the database should automatically synchronize its schema with the registered tables when connecting.
+     * If set to true, the database will check for discrepancies between the registered tables and the actual database schema and attempt to reconcile them.
+     * If set to false, the database will not perform any automatic schema synchronization.
+     * 
+     * @param automaticSchemaSync true to enable automatic schema synchronization, false to disable it
+     * @return This Database instance for chaining
+     */
+    public DataBase setAutomaticSchemaSync(boolean automaticSchemaSync) {
+        this.automaticSchemaSync = automaticSchemaSync;
         return this;
     }
 

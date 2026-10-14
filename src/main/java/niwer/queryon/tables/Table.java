@@ -163,14 +163,28 @@ public abstract class Table {
      * This should be called after defining all columns for the table.
      */
     public final void execute() {
-        if (this.DATA_BASE.tabExists(this)) {
-            final var MISSING_COLUMNS = COLUMNS.stream().filter(column -> !columnExists(column)).toList();
+        if (this.COLUMNS.isEmpty()) throw new IllegalStateException("Cannot create table '" + this.name() + "' without any columns.");
 
-            /* If there are missing columns, alter the table */
+        final String DESIRED_COLUMNS_AND_CONSTRAINTS = buildColumnsAndConstraintsSQL();
+
+        /* If the table exist, check if the schema matches the desired one */
+        if (this.DATA_BASE.automaticSchemaSync() && this.DATA_BASE.tabExists(this)) {
+            /* Fetch the actual CREATE statement currently stored in the SQLite file */
+            String currentSchema = QueryManager.queryString(this.DATA_BASE, "SELECT sql FROM sqlite_master WHERE type='table' AND name=" + this.escapedName() + ";");
+            String expectedCreatePrefix = "CREATE TABLE " + this.name() + " (" + DESIRED_COLUMNS_AND_CONSTRAINTS + ")";
+
+            /* If the current schema does not match the Java model (e.g., CHECK constraint changed) */
+            if (currentSchema != null && !QueryonEngine.normalizeSql(currentSchema).equals(QueryonEngine.normalizeSql(expectedCreatePrefix))) {
+                migrateTable(DESIRED_COLUMNS_AND_CONSTRAINTS);
+                return;
+            }
+
+            /* Handle simple missing columns via ADD COLUMN */
+            final var MISSING_COLUMNS = COLUMNS.stream().filter(column -> !columnExists(column)).toList();
             if (!MISSING_COLUMNS.isEmpty()) {
-                for (final Column missingColumn : MISSING_COLUMNS) {
-                    final String sql = "ALTER TABLE " + this.name() + " ADD COLUMN " + missingColumn.toAlterColumnSQL() + ";";
-                    QueryManager.query(this.DATA_BASE, sql);
+                for (final Column MISSING_COLUMN : MISSING_COLUMNS) {
+                    final String SQL = "ALTER TABLE " + this.name() + " ADD COLUMN " + MISSING_COLUMN.toAlterColumnSQL() + ";";
+                    QueryManager.query(this.DATA_BASE, SQL);
                 }
                 return;
             }
@@ -179,40 +193,73 @@ public abstract class Table {
             return;
         }
 
-        final StringBuilder QUERY = new StringBuilder("CREATE TABLE IF NOT EXISTS " + this.name());
+        /* Execute the query for a fresh table */
+        QueryManager.query(this.DATA_BASE, "CREATE TABLE IF NOT EXISTS " + this.name() + " (" + DESIRED_COLUMNS_AND_CONSTRAINTS + ")");
+    }
 
-        /* Get the columns */
+    private String buildColumnsAndConstraintsSQL() {
         final String COLUMNS_SQL = COLUMNS.stream()
             .map(Column::toString)
             .reduce((a, b) -> a + ", " + b)
             .orElse("");
 
-        /* Get foreign key constraints */
         final String CONSTRAINTS_SQL = COLUMNS.stream()
-            .map(column -> column.constraintSQL())
-            .filter(constraint -> constraint != null)
+            .map(Column::constraintSQL)
+            .filter(c -> c != null)
             .reduce((a, b) -> a + ", " + b)
             .orElse("");
 
-        /* Get check constraints */
         final String CHECK_CONSTRAINTS_SQL = CHECK_CONSTRAINTS.stream()
             .map(Expression::toString)
             .reduce((a, b) -> a + ", " + b)
             .orElse("");
 
         /* Build the final query */
-        QUERY.append(" (").append(COLUMNS_SQL);
-        if (!COLUMNS_SQL.isEmpty() && !CONSTRAINTS_SQL.isEmpty()) QUERY.append(", ");
-        QUERY.append(CONSTRAINTS_SQL);
-        if (!CHECK_CONSTRAINTS_SQL.isEmpty()) {
-            QUERY.append(", ");
-            QUERY.append("CHECK (").append(CHECK_CONSTRAINTS_SQL).append(")");
-        }
-        QUERY.append(")");
-
-        /* Execute the query */
-        QueryManager.query(this.DATA_BASE, QUERY.toString());
+        StringBuilder sb = new StringBuilder(COLUMNS_SQL);
+        if (!COLUMNS_SQL.isEmpty() && !CONSTRAINTS_SQL.isEmpty()) sb.append(", ");
+        sb.append(CONSTRAINTS_SQL);
+        if (!CHECK_CONSTRAINTS_SQL.isEmpty()) sb.append(", CHECK (").append(CHECK_CONSTRAINTS_SQL).append(")");
+        return sb.toString();
     }
 
+    /**
+     * Performs a safe table rebuild to apply constraint changes without data loss.
+     * In this method, we're using pure SQL via QueryManager to perform the migration.
+     */
+    private void migrateTable(String newColumnsAndConstraints) {
+        Console.log("Schema mismatch detected for %s. Migrating table...", this.name()).type(QueryonLogTypes.SQL).container(QueryonEngine.LOGGER).send();
+
+        String tempTableName = this.name() + "_migration_backup";
+
+        QueryManager.query(this.DATA_BASE, "PRAGMA foreign_keys=OFF;");
+        QueryManager.query(this.DATA_BASE, "BEGIN TRANSACTION;");
+
+        try {
+            /* Rename existing table to a backup table */
+            QueryManager.query(this.DATA_BASE, "ALTER TABLE " + this.name() + " RENAME TO " + tempTableName + ";");
+
+            /* Create the new table with updated constraints/enums */
+            QueryManager.query(this.DATA_BASE, "CREATE TABLE " + this.name() + " (" + newColumnsAndConstraints + ");");
+
+            /* Identify common columns between the two definitions */
+            Set<String> newCols = getRegisteredColumnNames();
+            String commonCols = newCols.stream()
+                .map(QueryonEngine::escapeString)
+                .collect(Collectors.joining(", "));
+
+            /* Copy existing rows across */
+            QueryManager.query(this.DATA_BASE, "INSERT INTO " + this.name() + " (" + commonCols + ") SELECT " + commonCols + " FROM " + tempTableName + ";");
+
+            /* Drop temporary backup table */
+            QueryManager.query(this.DATA_BASE, "DROP TABLE " + tempTableName + ";");
+            QueryManager.query(this.DATA_BASE, "COMMIT;");
+        } catch (Exception e) {
+            QueryManager.query(this.DATA_BASE, "ROLLBACK;");
+            throw new RuntimeException("Failed to migrate table " + this.name(), e);
+        } finally {
+            QueryManager.query(this.DATA_BASE, "PRAGMA foreign_keys=ON;");
+        }
+    }
+    
     @Override public int hashCode() { return name().hashCode(); }
 }

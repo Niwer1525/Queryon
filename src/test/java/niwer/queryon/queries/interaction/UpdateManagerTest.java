@@ -21,7 +21,7 @@ class UpdateManagerTest {
 
     @Test void testUpdateManagerSQL(@TempDir File tempDir) {
         final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
-        final String ESCAPED_TABLE_NAME = QueryonEngine.escapeString("test_table");
+        final String ESCAPED_TABLE_NAME = QueryonEngine.escapeString("user_table");
 
         assertThrows(IllegalStateException.class, () -> UpdateManager.update(DB, TestUserTable.class).buildQuery());
 

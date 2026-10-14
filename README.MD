@@ -91,6 +91,11 @@ DATA_BASE.setConnectionMode(EnumConnectionMode.PER_QUERY); // Each query will cr
 ```
 Note the default is PERSISTENT, which means that all queries will use the same connection.
 
+Queryon also provides a way to automatically synchronize your database schema with your Java models. It's enabled by default, you can disable this feature by calling the `setAutomaticSchemaSync` method of the `DataBase` class.
+```java
+DATA_BASE.setAutomaticSchemaSync(true); // Enable automatic schema synchronization.
+```
+
 ### Schema synchronization
 Queryon provides a simple way to synchronize your database schema with your Java models. You can use the `syncSchema` method of the `DataBase` class to synchronize your database schema with your Java models. This method will drop tables and columns that are defined in your database but not in your Java models.
 

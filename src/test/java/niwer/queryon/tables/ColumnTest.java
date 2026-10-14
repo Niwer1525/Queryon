@@ -2,6 +2,7 @@ package niwer.queryon.tables;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.File;
@@ -10,8 +11,10 @@ import java.lang.reflect.Field;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import niwer.queryon.DataBase;
 import niwer.queryon.QueryonEngineTest;
 import niwer.queryon.SQLSerializable;
+import niwer.queryon.TestFoodTable;
 import niwer.queryon.TestUserTable;
 import niwer.queryon.queries.Expressions;
 import niwer.queryon.tables.api.IColumnField;
@@ -257,8 +260,15 @@ class ColumnTest {
         assertDoesNotThrow(() -> {
             new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "user_id", EnumColumnTypes.INT, 0, null)
                 .foreignKey(TestUserTable.class, "id", EnumForeginKeyAction.SET_NULL)
-                .foreignKey(TestUserTable.class, null, EnumForeginKeyAction.SET_NULL)
+                .foreignKey(TestUserTable.class, "id", null)
             ;
+        });
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "user_id", EnumColumnTypes.INT, 0, null)
+                .foreignKey(null, "id", EnumForeginKeyAction.SET_NULL)
+                .foreignKey(TestUserTable.class, null, EnumForeginKeyAction.SET_NULL)
+                .foreignKey(null, null, EnumForeginKeyAction.SET_NULL);
         });
     }
 
@@ -269,5 +279,27 @@ class ColumnTest {
         assertThrows(IllegalArgumentException.class, () -> new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", null, 0, null));
         assertThrows(IllegalArgumentException.class, () -> new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.VARCHAR, -1, null));
         assertThrows(IllegalArgumentException.class, () -> new Column(QueryonEngineTest.setupUsersAndFoodDB(tempDir), "test_column", EnumColumnTypes.ENUM, 0, null));
+    }
+
+    @Test void testAlterColumn(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersAndFoodDB(tempDir);
+        Column column = Table.createColumn(DB, "test_column", 255) // VARCHAR
+            .autoIncrement()
+            .notNull()
+            .unique()
+            .defaultValue(0, Expressions.isLessThan("test_column", 100));
+        assertNotNull(column.toAlterColumnSQL());
+
+        Column columnNoDefaultVal = Table.createColumn(DB, "test_column", EnumColumnTypes.BIGINT); // VARCHAR
+        assertNotNull(columnNoDefaultVal.toAlterColumnSQL());
+    }
+
+    @Test void testConstraintSQL(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersAndFoodDB(tempDir);
+
+        Column column = Table.createColumn(DB, "test_column", 255) // VARCHAR
+            .foreignKey(TestFoodTable.class, "id", EnumForeginKeyAction.NO_ACTION);
+            
+        assertNotNull(column.constraintSQL());
     }
 }

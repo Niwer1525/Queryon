@@ -24,7 +24,7 @@ class SelectionManagerTest {
 
     @Test void testSelectionManagerSQL(@TempDir File tempDir) {
         final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
-        final String ESCAPED_TABLE_NAME = QueryonEngine.escapeString("test_table");
+        final String ESCAPED_TABLE_NAME = QueryonEngine.escapeString("user_table");
 
         final String SELECT_ALL = SelectionManager.select(DB, TestUserTable.class)
             .buildQuery();

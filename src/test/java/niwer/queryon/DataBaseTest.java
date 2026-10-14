@@ -39,6 +39,17 @@ class DataBaseTest {
         assertThrows(IllegalArgumentException.class, () -> DB.setPrunePolicy(null));
     }
 
+    @Test void testAutomaticSchemaSync() {
+        final DataBase DB = new DataBase(new File(tempDir, "test.db"));
+        assertTrue(DB.automaticSchemaSync(), "Automatic schema sync should be enabled by default");
+
+        assertDoesNotThrow(() -> DB.setAutomaticSchemaSync(false));
+        assertFalse(DB.automaticSchemaSync(), "Automatic schema sync should be disabled after setting it to false");
+
+        assertDoesNotThrow(() -> DB.setAutomaticSchemaSync(true));
+        assertTrue(DB.automaticSchemaSync(), "Automatic schema sync should be enabled after setting it to true");
+    }
+
     @Test void testSyncSchema() {
         final DataBase DB = new DataBase(new File(tempDir, "test.db"));
         DB.registerTable(TestUserTable.class);

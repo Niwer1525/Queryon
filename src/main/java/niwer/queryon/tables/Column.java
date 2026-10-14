@@ -199,6 +199,7 @@ public class Column {
      * @return The SQLColumn instance for chaining
      */
     public final Column foreignKey(Class<? extends Table> referenceTable, String referenceColumn, EnumForeginKeyAction deleteAction) {
+        if(referenceTable == null || referenceColumn == null) throw new IllegalArgumentException("Reference table and column cannot be null for foreign key constraint on column " + ESCAPED_NAME);
         this.foreignKeyReferenceTable = this.DATA_BASE.getTable(referenceTable);
         this.foreignKeyReferenceColumn = referenceColumn;
         this.foreignKeyDeleteAction = deleteAction;

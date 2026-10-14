@@ -125,4 +125,17 @@ public class QueryonEngineTest {
         assertEquals(Object.class, QueryonEngine.wrap(Object.class));
         assertEquals(String.class, QueryonEngine.wrap(String.class));
     }
+
+    @Test void testNormalizeSql() {
+        final String SQL1 = "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)".toLowerCase();
+        final String SQL2 = "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)".toLowerCase();
+        final String SQL3 = "CREATE TABLE users (name TEXT, id INTEGER PRIMARY KEY)".toLowerCase();
+
+        assertEquals(SQL1, QueryonEngine.normalizeSql(SQL1));
+        assertEquals(SQL2, QueryonEngine.normalizeSql(SQL2));
+        assertEquals(SQL3, QueryonEngine.normalizeSql(SQL3));
+
+        assertTrue(QueryonEngine.normalizeSql(SQL1).equals(QueryonEngine.normalizeSql(SQL2)));
+        assertFalse(QueryonEngine.normalizeSql(SQL1).equals(QueryonEngine.normalizeSql(SQL3)));
+    }
 }

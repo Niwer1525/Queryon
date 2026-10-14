@@ -21,7 +21,7 @@ class InsertionManagerTest {
 
     @Test void testInsertionManagerSQL(@TempDir File tempDir) {
         final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
-        final String ESCAPED_TABLE_NAME = QueryonEngine.escapeString("test_table");
+        final String ESCAPED_TABLE_NAME = QueryonEngine.escapeString("user_table");
 
         final String INSERT = InsertionManager.insert(DB, TestUserTable.class, "id", "name", "age")
             .row(1, "Alice", 30)
@@ -57,7 +57,7 @@ class InsertionManagerTest {
 
     @Test void testInsertWithSerializable(@TempDir File tempDir) {
         final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
-        final String ESCAPED_TABLE_NAME = QueryonEngine.escapeString("test_table");
+        final String ESCAPED_TABLE_NAME = QueryonEngine.escapeString("user_table");
 
         assertThrows(IllegalArgumentException.class, () -> InsertionManager.insert(DB, TestUserTable.class, (SQLSerializable<?>) null).buildQuery());
         assertThrows(IllegalArgumentException.class, () -> InsertionManager.insertOrIgnore(DB, TestUserTable.class, (SQLSerializable<?>) null).buildQuery());
@@ -69,7 +69,7 @@ class InsertionManagerTest {
 
     @Test void testOnConflictDoNothing(@TempDir File tempDir) {
         final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
-        final String ESCAPED_TABLE_NAME = QueryonEngine.escapeString("test_table");
+        final String ESCAPED_TABLE_NAME = QueryonEngine.escapeString("user_table");
 
         final String INSERT_DO_NOTHING = InsertionManager.insertOrIgnore(DB, TestUserTable.class, "id", "name", "age")
             .row(1, "Alice", 30)

@@ -15,7 +15,9 @@ import niwer.queryon.DataBase;
 import niwer.queryon.QueryonEngineTest;
 import niwer.queryon.QueryonEngineTest.TestEnum;
 import niwer.queryon.SQLSerializable;
+import niwer.queryon.TestEmptyTable;
 import niwer.queryon.TestFoodTable;
+import niwer.queryon.TestTable;
 import niwer.queryon.queries.Expressions;
 import niwer.queryon.tables.api.IColumnField;
 import niwer.queryon.tables.api.IForeignKey;
@@ -29,10 +31,10 @@ class TableTest {
     }
 
     @Test void testCreateEmptyTable(@TempDir File tempDir) {
-        final Table TABLE = new Table(QueryonEngineTest.setupUsersDB(tempDir)) {
-            @Override public String name() { return "test_table"; }
-        };
-        assertDoesNotThrow(() -> TABLE.execute());
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
+        final Table TABLE = new TestEmptyTable(DB);
+        DB.registerTable(TestEmptyTable.class);
+        assertThrows(IllegalStateException.class, () -> TABLE.execute());
     }
 
     @Test void testCreateTableWithColumnsAndConstraints(@TempDir File tempDir) {
@@ -96,9 +98,8 @@ class TableTest {
 
     @Test void testDropAllRows(@TempDir File tempDir) {
         final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
-        final Table TABLE = new Table(DB) {
-            @Override public String name() { return "test_table"; }
-        };
+        final Table TABLE = new TestTable(DB);
+        DB.registerTable(TestTable.class);
         assertDoesNotThrow(() -> TABLE.dropAllRows(), "dropAllRows should not throw an exception when dropping all rows from an existing table");
     }
 

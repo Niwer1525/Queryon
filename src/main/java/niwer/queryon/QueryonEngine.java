@@ -31,6 +31,17 @@ public class QueryonEngine {
     }
 
     /**
+     * Normalizes a SQL string by replacing multiple whitespace characters with a single space, trimming leading and trailing whitespace, and converting to lowercase.
+     * This is useful for comparing SQL strings in a case-insensitive manner and ignoring formatting differences
+     * 
+     * @param sql The SQL string to normalize
+     * @return The normalized SQL string
+     */
+    public static String normalizeSql(String sql) {
+        return sql.replaceAll("\\s+", " ").trim().toLowerCase();
+    }
+
+    /**
      * Convert a Date object to String in yyyy-MM-dd format.
      * e.g : 2026-01-25
      * 

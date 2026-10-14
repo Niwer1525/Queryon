@@ -35,7 +35,7 @@ public class TestUserTable extends Table {
     }
 
     @Override
-    public String name() { return "test_table"; }
+    public String name() { return "user_table"; }
 
     public static class TestUser extends SQLSerializable<TestUser> {
         @IColumnField(name = "id") // Optional: specify the column name if it differs from the field name
