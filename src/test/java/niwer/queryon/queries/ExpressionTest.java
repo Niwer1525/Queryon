@@ -3,6 +3,8 @@ package niwer.queryon.queries;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.sql.Date;
+
 import org.junit.jupiter.api.Test;
 
 class ExpressionTest {
@@ -15,28 +17,44 @@ class ExpressionTest {
         final Expression EXPRESSION = Expressions.isGreaterThan("age", 30);
         assertExpressionEquals("age > 30", EXPRESSION);
 
-        assertThrows(IllegalArgumentException.class, () -> Expressions.isGreaterThan("age", null));
+        final Expression EXPRESSION_DATE = Expressions.isGreaterThan("created_at", Date.valueOf("2024-01-01"));
+        assertExpressionEquals("created_at > '2024-01-01'", EXPRESSION_DATE);
+
+        assertThrows(IllegalArgumentException.class, () -> Expressions.isGreaterThan("age", (Number)null));
+        assertThrows(IllegalArgumentException.class, () -> Expressions.isGreaterThan("age", (Date)null));
     }
 
     @Test void createGreaterThanOrEqualToExpression() {
         final Expression EXPRESSION = Expressions.isGreaterThanOrEqualTo("age", 30);
         assertExpressionEquals("age >= 30", EXPRESSION);
 
-        assertThrows(IllegalArgumentException.class, () -> Expressions.isGreaterThanOrEqualTo("age", null));
+        final Expression EXPRESSION_DATE = Expressions.isGreaterThanOrEqualTo("created_at", Date.valueOf("2024-01-01"));
+        assertExpressionEquals("created_at >= '2024-01-01'", EXPRESSION_DATE);
+
+        assertThrows(IllegalArgumentException.class, () -> Expressions.isGreaterThanOrEqualTo("age", (Number)null));
+        assertThrows(IllegalArgumentException.class, () -> Expressions.isGreaterThanOrEqualTo("age", (Date)null));
     }
 
     @Test void createLessThanExpression() {
         final Expression EXPRESSION = Expressions.isLessThan("age", 30);
         assertExpressionEquals("age < 30", EXPRESSION);
 
-        assertThrows(IllegalArgumentException.class, () -> Expressions.isLessThan("age", null));
+        final Expression EXPRESSION_DATE = Expressions.isLessThan("created_at", Date.valueOf("2024-01-01"));
+        assertExpressionEquals("created_at < '2024-01-01'", EXPRESSION_DATE);
+
+        assertThrows(IllegalArgumentException.class, () -> Expressions.isLessThan("age", (Number)null));
+        assertThrows(IllegalArgumentException.class, () -> Expressions.isLessThan("age", (Date)null));
     }
 
     @Test void createLessThanOrEqualToExpression() {
         final Expression EXPRESSION = Expressions.isLessThanOrEqualTo("age", 30);
         assertExpressionEquals("age <= 30", EXPRESSION);
 
-        assertThrows(IllegalArgumentException.class, () -> Expressions.isLessThanOrEqualTo("age", null));
+        final Expression EXPRESSION_DATE = Expressions.isLessThanOrEqualTo("created_at", Date.valueOf("2024-01-01"));
+        assertExpressionEquals("created_at <= '2024-01-01'", EXPRESSION_DATE);
+
+        assertThrows(IllegalArgumentException.class, () -> Expressions.isLessThanOrEqualTo("age", (Number)null));
+        assertThrows(IllegalArgumentException.class, () -> Expressions.isLessThanOrEqualTo("age", (Date)null));
     }
 
     @Test void createEqualToExpression() {

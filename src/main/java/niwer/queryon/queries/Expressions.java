@@ -1,6 +1,7 @@
 package niwer.queryon.queries;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.stream.Collectors;
 
 /**
@@ -48,10 +49,22 @@ public final class Expressions {
         return new Expression(column + " IS NOT NULL");
     }
 
+    public static Expression isGreaterThan(String column, Date date) {
+        validateColumn(column);
+        if (date == null) throw new IllegalArgumentException("Date cannot be null");
+        return new Expression(column + " > '" + date.toString() + "'");
+    }
+    
     public static Expression isGreaterThan(String column, Number value) {
         validateColumn(column);
         if (value == null) throw new IllegalArgumentException("Value cannot be null");
         return new Expression(column + " > " + value);
+    }
+
+    public static Expression isGreaterThanOrEqualTo(String column, Date date) {
+        validateColumn(column);
+        if (date == null) throw new IllegalArgumentException("Date cannot be null");
+        return new Expression(column + " >= '" + date.toString() + "'");
     }
 
     public static Expression isGreaterThanOrEqualTo(String column, Number value) {
@@ -60,10 +73,22 @@ public final class Expressions {
         return new Expression(column + " >= " + value);
     }
 
+    public static Expression isLessThan(String column, Date date) {
+        validateColumn(column);
+        if (date == null) throw new IllegalArgumentException("Date cannot be null");
+        return new Expression(column + " < '" + date.toString() + "'");
+    }
+
     public static Expression isLessThan(String column, Number value) {
         validateColumn(column);
         if (value == null) throw new IllegalArgumentException("Value cannot be null");
         return new Expression(column + " < " + value);
+    }
+
+    public static Expression isLessThanOrEqualTo(String column, Date date) {
+        validateColumn(column);
+        if (date == null) throw new IllegalArgumentException("Date cannot be null");
+        return new Expression(column + " <= '" + date.toString() + "'");
     }
 
     public static Expression isLessThanOrEqualTo(String column, Number value) {
@@ -76,6 +101,9 @@ public final class Expressions {
         validateColumn(column);
         if (value == null) {
             return new Expression(column + " IS NULL");
+        } 
+        else if (value instanceof Date) {
+            return new Expression(column + " = '" + ((Date) value).toString() + "'");
         } else if (value instanceof String) {
             return new Expression(column + " = '" + escape(value.toString()) + "'");
         } else {
@@ -87,6 +115,8 @@ public final class Expressions {
         validateColumn(column);
         if (value == null) {
             return new Expression(column + " IS NOT NULL");
+        } else if (value instanceof Date) {
+            return new Expression(column + " <> '" + ((Date) value).toString() + "'");
         } else if (value instanceof String) {
             return new Expression(column + " <> '" + escape(value.toString()) + "'");
         } else {
@@ -102,7 +132,8 @@ public final class Expressions {
         final StringBuilder QUERY = new StringBuilder(column + " IN (");
         for (int i = 0; i < values.length; i++) {
             final Object VALUE = values[i];
-            if (VALUE instanceof String) QUERY.append("'").append(escape(VALUE.toString())).append("'");
+            if (VALUE instanceof Date) QUERY.append("'").append(((Date) VALUE).toString()).append("'");
+            else if (VALUE instanceof String) QUERY.append("'").append(escape(VALUE.toString())).append("'");
             else if (VALUE == null) QUERY.append("NULL");
             else QUERY.append(VALUE);
             if (i < values.length - 1) QUERY.append(", ");
@@ -119,8 +150,8 @@ public final class Expressions {
         final StringBuilder QUERY = new StringBuilder(column + " IN (");
         final Object[] ENUM_CONSTANTS = enumClass.getEnumConstants();
         for (int i = 0; i < ENUM_CONSTANTS.length; i++) {
-            final Object VALUE = ENUM_CONSTANTS[i];
-            QUERY.append("'").append(VALUE).append("'");
+            if (ENUM_CONSTANTS[i] instanceof Date) QUERY.append("'").append(((Date) ENUM_CONSTANTS[i]).toString()).append("'");
+            else QUERY.append("'").append(ENUM_CONSTANTS[i]).append("'");
             if (i < ENUM_CONSTANTS.length - 1) QUERY.append(", ");
         }
         QUERY.append(")");
