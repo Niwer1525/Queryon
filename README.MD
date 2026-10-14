@@ -91,6 +91,30 @@ DATA_BASE.setConnectionMode(EnumConnectionMode.PER_QUERY); // Each query will cr
 ```
 Note the default is PERSISTENT, which means that all queries will use the same connection.
 
+### Connection mode benchmark
+The repository includes a benchmark that compares `PER_QUERY` and `PERSISTENT` using concurrent read and write workloads. It reports throughput and latency percentiles, writes CSV results, and generates a self-contained HTML chart:
+
+```bash
+./gradlew connectionModeBenchmark
+```
+
+Results are written to `build/benchmark-results/connection-mode-results.csv` and `build/benchmark-results/connection-mode-results.html`. You can adjust the workload:
+
+```bash
+./gradlew connectionModeBenchmark \
+  -PbenchmarkThreads=16 \
+  -PbenchmarkOperations=1000 \
+  -PbenchmarkWarmupRounds=3
+```
+
+To collect CPU, allocation, lock, and I/O data with Java Flight Recorder:
+
+```bash
+./gradlew connectionModeJfr
+```
+
+The recording is written to `build/benchmark-results/connection-mode.jfr` and can be opened in [JDK Mission Control](https://www.oracle.com/java/technologies/jdk-mission-control.html).
+
 Queryon also provides a way to automatically synchronize your database schema with your Java models. It's enabled by default, you can disable this feature by calling the `setAutomaticSchemaSync` method of the `DataBase` class.
 ```java
 DATA_BASE.setAutomaticSchemaSync(true); // Enable automatic schema synchronization.

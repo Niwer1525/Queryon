@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import niwer.lumen.Console;
 import niwer.queryon.DataBase;
 import niwer.queryon.QueryonEngine;
+import niwer.queryon.QueryonException;
 import niwer.queryon.QueryonLogTypes;
 import niwer.queryon.SQLSerializable;
 import niwer.queryon.queries.Expression;
@@ -169,6 +170,15 @@ public abstract class Table {
 
         /* If the table exist, check if the schema matches the desired one */
         if (this.DATA_BASE.automaticSchemaSync() && this.DATA_BASE.tabExists(this)) {
+            /* Handle add-only changes with ALTER TABLE before considering a rebuild. */
+            final var MISSING_COLUMNS = COLUMNS.stream().filter(column -> !columnExists(column)).toList();
+            if (!MISSING_COLUMNS.isEmpty()) {
+                for (final Column MISSING_COLUMN : MISSING_COLUMNS) {
+                    final String SQL = "ALTER TABLE " + this.name() + " ADD COLUMN " + MISSING_COLUMN.toAlterColumnSQL() + ";";
+                    QueryManager.query(this.DATA_BASE, SQL);
+                }
+            }
+
             /* Fetch the actual CREATE statement currently stored in the SQLite file */
             String currentSchema = QueryManager.queryString(this.DATA_BASE, "SELECT sql FROM sqlite_master WHERE type='table' AND name=" + this.escapedName() + ";");
             String expectedCreatePrefix = "CREATE TABLE " + this.name() + " (" + DESIRED_COLUMNS_AND_CONSTRAINTS + ")";
@@ -179,16 +189,7 @@ public abstract class Table {
                 return;
             }
 
-            /* Handle simple missing columns via ADD COLUMN */
-            final var MISSING_COLUMNS = COLUMNS.stream().filter(column -> !columnExists(column)).toList();
-            if (!MISSING_COLUMNS.isEmpty()) {
-                for (final Column MISSING_COLUMN : MISSING_COLUMNS) {
-                    final String SQL = "ALTER TABLE " + this.name() + " ADD COLUMN " + MISSING_COLUMN.toAlterColumnSQL() + ";";
-                    QueryManager.query(this.DATA_BASE, SQL);
-                }
-                return;
-            }
-
+            if (!MISSING_COLUMNS.isEmpty()) return;
             Console.log("Table %s already exists with all defined columns. Skipping creation.", this.name()).type(QueryonLogTypes.SQL).container(QueryonEngine.LOGGER).send();
             return;
         }
@@ -236,6 +237,8 @@ public abstract class Table {
 
         try {
             /* Rename existing table to a backup table */
+            String existingColumns = QueryManager.queryString(this.DATA_BASE, "SELECT group_concat(name, ',') FROM pragma_table_info(" + this.escapedName() + ");");
+            final Set<String> EXISTING_COLUMNS = existingColumns == null ? Set.of() : Set.of(existingColumns.split(","));
             QueryManager.query(this.DATA_BASE, "ALTER TABLE " + this.name() + " RENAME TO " + tempTableName + ";");
 
             /* Create the new table with updated constraints/enums */
@@ -244,15 +247,24 @@ public abstract class Table {
             /* Identify common columns between the two definitions */
             Set<String> newCols = getRegisteredColumnNames();
             String commonCols = newCols.stream()
+                .filter(EXISTING_COLUMNS::contains)
                 .map(QueryonEngine::escapeString)
                 .collect(Collectors.joining(", "));
 
             /* Copy existing rows across */
-            QueryManager.query(this.DATA_BASE, "INSERT INTO " + this.name() + " (" + commonCols + ") SELECT " + commonCols + " FROM " + tempTableName + ";");
+            if (!commonCols.isEmpty()) {
+                QueryManager.query(this.DATA_BASE, "INSERT INTO " + this.name() + " (" + commonCols + ") SELECT " + commonCols + " FROM " + tempTableName + ";");
+            }
 
             /* Drop temporary backup table */
             QueryManager.query(this.DATA_BASE, "DROP TABLE " + tempTableName + ";");
             QueryManager.query(this.DATA_BASE, "COMMIT;");
+        } catch (QueryonException e) {
+            QueryManager.query(this.DATA_BASE, "ROLLBACK;");
+            throw new QueryonException(
+                "Cannot migrate table '" + this.name() + "': existing data is incompatible with the new schema. " + "Update or remove invalid rows before retrying the migration.",
+                e
+            );
         } catch (Exception e) {
             QueryManager.query(this.DATA_BASE, "ROLLBACK;");
             throw new RuntimeException("Failed to migrate table " + this.name(), e);

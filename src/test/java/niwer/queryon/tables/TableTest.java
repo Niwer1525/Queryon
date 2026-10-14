@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.util.Date;
@@ -14,11 +15,13 @@ import org.junit.jupiter.api.io.TempDir;
 import niwer.queryon.DataBase;
 import niwer.queryon.QueryonEngineTest;
 import niwer.queryon.QueryonEngineTest.TestEnum;
+import niwer.queryon.QueryonException;
 import niwer.queryon.SQLSerializable;
 import niwer.queryon.TestEmptyTable;
 import niwer.queryon.TestFoodTable;
 import niwer.queryon.TestTable;
 import niwer.queryon.queries.Expressions;
+import niwer.queryon.queries.QueryManager;
 import niwer.queryon.tables.api.IColumnField;
 import niwer.queryon.tables.api.IForeignKey;
 
@@ -47,6 +50,72 @@ class TableTest {
             .addCheckConstraint(Expressions.isEqualTo("int_column", 25))
             .execute()
         );
+    }
+
+    @Test void testAutomaticSchemaSyncMigratesChangedSchema(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
+        final Table INITIAL_TABLE = new Table(DB) {
+            @Override public String name() { return "schema_sync_table"; }
+        };
+        INITIAL_TABLE.addColumn(Table.createColumn(DB, "int_column", EnumColumnTypes.INT)).execute();
+        QueryManager.query(DB, "INSERT INTO schema_sync_table (int_column) VALUES (25);");
+
+        final Table UPDATED_TABLE = new Table(DB) {
+            @Override public String name() { return "schema_sync_table"; }
+        };
+        UPDATED_TABLE.addColumn(Table.createColumn(DB, "int_column", EnumColumnTypes.INT))
+            .addCheckConstraint(Expressions.isEqualTo("int_column", 25))
+            .execute();
+
+        final String SCHEMA = QueryManager.queryString(DB,
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='schema_sync_table';");
+        assertTrue(SCHEMA.contains("CHECK"), "Schema synchronization should apply changed constraints");
+        assertEquals(1, QueryManager.queryInt(DB, "SELECT COUNT(*) FROM schema_sync_table;"),
+            "Schema migration should preserve existing rows");
+    }
+
+    @Test void testAutomaticSchemaSyncAddsMissingColumn(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
+        final Table INITIAL_TABLE = new Table(DB) {
+            @Override public String name() { return "missing_column_table"; }
+        };
+        INITIAL_TABLE.addColumn(Table.createColumn(DB, "id", EnumColumnTypes.INT)).execute();
+        QueryManager.query(DB, "INSERT INTO missing_column_table (id) VALUES (7);");
+
+        final Table UPDATED_TABLE = new Table(DB) {
+            @Override public String name() { return "missing_column_table"; }
+        };
+        UPDATED_TABLE.addColumns(
+            Table.createColumn(DB, "id", EnumColumnTypes.INT),
+            Table.createColumn(DB, "name", 32)
+        ).execute();
+
+        assertEquals(1, QueryManager.queryInt(DB,
+            "SELECT COUNT(*) FROM pragma_table_info('missing_column_table') WHERE name='name';"));
+        assertEquals(1, QueryManager.queryInt(DB, "SELECT COUNT(*) FROM missing_column_table;"),
+            "Adding a column should preserve existing rows");
+    }
+
+    @Test void testAutomaticSchemaSyncRejectsIncompatibleData(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
+        final Table INITIAL_TABLE = new Table(DB) {
+            @Override public String name() { return "incompatible_data_table"; }
+        };
+        INITIAL_TABLE.addColumn(Table.createColumn(DB, "status", EnumColumnTypes.TEXT)).execute();
+        QueryManager.query(DB, "INSERT INTO incompatible_data_table (status) VALUES ('REMOVED');");
+
+        final Table UPDATED_TABLE = new Table(DB) {
+            @Override public String name() { return "incompatible_data_table"; }
+        };
+        UPDATED_TABLE.addColumn(Table.createColumn(DB, "status", EnumColumnTypes.TEXT))
+            .addCheckConstraint(Expressions.in("status", TestEnum.class));
+
+        final QueryonException EXCEPTION = assertThrows(QueryonException.class, UPDATED_TABLE::execute);
+        assertTrue(EXCEPTION.getMessage().contains("existing data is incompatible"),
+            "Migration failures should explain that existing data must be updated");
+        assertEquals(1, QueryManager.queryInt(DB,
+            "SELECT COUNT(*) FROM incompatible_data_table WHERE status='REMOVED';"),
+            "A failed migration should leave the original table and data intact");
     }
     
     @Test void testCreateTableIllegalArgs(@TempDir File tempDir) {

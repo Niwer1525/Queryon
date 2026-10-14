@@ -29,12 +29,11 @@ public class QueryManager {
         if (db == null) throw new IllegalArgumentException("Database cannot be null.");
         if (sql == null || sql.isEmpty()) throw new IllegalArgumentException("SQL command cannot be null or empty.");
 
-        final boolean TEMPORARY_CONNECTION = db.connectionMode() == DataBase.ConnectionMode.PER_QUERY;
-        if (TEMPORARY_CONNECTION) return executeWithConnection(db, callback, sql, shouldReturnResult, true, params);
-
         synchronized (db) {
-            return executeWithConnection(db, callback, sql, shouldReturnResult, false, params);
+            if (db.connectionMode() != DataBase.ConnectionMode.PER_QUERY)
+                return executeWithConnection(db, callback, sql, shouldReturnResult, false, params);
         }
+        return executeWithConnection(db, callback, sql, shouldReturnResult, true, params);
     }
 
     private static Object executeWithConnection(DataBase db, QueryCallback callback, String sql, boolean shouldReturnResult, boolean temporaryConnection, Object... params) throws QueryonException {

@@ -27,6 +27,7 @@ import niwer.queryon.tables.Table;
 public class DataBase {
 
     private static final int SQLITE_BUSY_TIMEOUT_MILLISECONDS = 5_000;
+    private volatile boolean walModeInitialized;
     private SchemaPrunePolicy prunePolicy = SchemaPrunePolicy.STRICT_SAFE;
 
     public static enum ConnectionMode {
@@ -40,6 +41,7 @@ public class DataBase {
     private Connection sqlConnection = null;
     private ConnectionMode connectionMode = ConnectionMode.PERSISTENT;
     private boolean automaticSchemaSync = true;
+    private int sqliteBusyTimeoutMilliseconds = SQLITE_BUSY_TIMEOUT_MILLISECONDS;
     
     /**
      * Create a new DataBase
@@ -110,6 +112,23 @@ public class DataBase {
         return this;
     }
 
+    public synchronized int sqliteBusyTimeoutMilliseconds() {
+        return this.sqliteBusyTimeoutMilliseconds;
+    }
+
+    /**
+     * Set the SQLite busy timeout in milliseconds.
+     * This determines how long the database will wait for a lock to be released before throwing an exception when a query is executed.
+     * 
+     * @param sqliteBusyTimeoutMilliseconds The busy timeout in milliseconds. It must be a non-negative integer.
+     * @return This Database instance for chaining
+     */
+    public synchronized DataBase setSqliteBusyTimeoutMilliseconds(int sqliteBusyTimeoutMilliseconds) {
+        if (sqliteBusyTimeoutMilliseconds < 0) throw new IllegalArgumentException("SQLite busy timeout must be non-negative");
+        this.sqliteBusyTimeoutMilliseconds = sqliteBusyTimeoutMilliseconds;
+        return this;
+    }
+
     /**
      * Set the schema pruning policy for the database. This determines how the database will handle discrepancies between the registered tables and the actual database schema when connecting.
      * 
@@ -164,17 +183,34 @@ public class DataBase {
     public Connection openConnection() throws SQLException {
         final Connection connection = DriverManager.getConnection(this.DATA_BASE_PATH);
         try (var statement = connection.createStatement()) {
-            statement.execute("PRAGMA busy_timeout = " + SQLITE_BUSY_TIMEOUT_MILLISECONDS);
-            statement.execute("PRAGMA journal_mode = WAL");
+            statement.execute("PRAGMA busy_timeout = " + this.sqliteBusyTimeoutMilliseconds);
         } catch (SQLException e) {
-            try {
-                connection.close();
-            } catch (SQLException closeException) {
-                e.addSuppressed(closeException);
-            }
+            closeAfterConfigurationFailure(connection, e);
             throw e;
         }
+
+        if (!walModeInitialized) {
+            synchronized (this) {
+                if (!walModeInitialized) {
+                    try (var statement = connection.createStatement()) {
+                        statement.execute("PRAGMA journal_mode = WAL");
+                        walModeInitialized = true;
+                    } catch (SQLException e) {
+                        closeAfterConfigurationFailure(connection, e);
+                        throw e;
+                    }
+                }
+            }
+        }
         return connection;
+    }
+
+    private static void closeAfterConfigurationFailure(Connection connection, SQLException failure) {
+        try {
+            connection.close();
+        } catch (SQLException e) {
+            failure.addSuppressed(e);
+        }
     }
 
     /**

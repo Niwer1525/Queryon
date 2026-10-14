@@ -77,3 +77,37 @@ tasks.named('test') {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
 }
+
+tasks.register('connectionModeBenchmark', JavaExec) {
+    group = 'benchmark'
+    description = 'Compare PERSISTENT and PER_QUERY with throughput and latency statistics.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'niwer.queryon.benchmark.ConnectionModeBenchmark'
+    args = [
+        layout.buildDirectory.dir('benchmark-results').get().asFile.absolutePath,
+        providers.gradleProperty('benchmarkThreads').getOrElse('8'),
+        providers.gradleProperty('benchmarkOperations').getOrElse('250'),
+        providers.gradleProperty('benchmarkWarmupRounds').getOrElse('2')
+    ]
+}
+
+tasks.register('connectionModeJfr', JavaExec) {
+    group = 'benchmark'
+    description = 'Run the connection mode benchmark with a Java Flight Recorder profile.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'niwer.queryon.benchmark.ConnectionModeBenchmark'
+    def resultDirectory = layout.buildDirectory.dir('benchmark-results').get().asFile
+    doFirst {
+        resultDirectory.mkdirs()
+        jvmArgs = [
+            '-XX:StartFlightRecording=filename=' + new File(resultDirectory, 'connection-mode.jfr').absolutePath
+                + ',settings=profile,duration=60s'
+        ]
+    }
+    args = [
+        resultDirectory.absolutePath,
+        providers.gradleProperty('benchmarkThreads').getOrElse('8'),
+        providers.gradleProperty('benchmarkOperations').getOrElse('250'),
+        providers.gradleProperty('benchmarkWarmupRounds').getOrElse('2')
+    ]
+}
