@@ -30,9 +30,17 @@ public class QueryManager {
         if (sql == null || sql.isEmpty()) throw new IllegalArgumentException("SQL command cannot be null or empty.");
 
         final boolean TEMPORARY_CONNECTION = db.connectionMode() == DataBase.ConnectionMode.PER_QUERY;
+        if (TEMPORARY_CONNECTION) return executeWithConnection(db, callback, sql, shouldReturnResult, true, params);
+
+        synchronized (db) {
+            return executeWithConnection(db, callback, sql, shouldReturnResult, false, params);
+        }
+    }
+
+    private static Object executeWithConnection(DataBase db, QueryCallback callback, String sql, boolean shouldReturnResult, boolean temporaryConnection, Object... params) throws QueryonException {
         Connection CONNECTION = null;
         try {
-            if (TEMPORARY_CONNECTION) CONNECTION = db.openConnection();
+            if (temporaryConnection) CONNECTION = db.openConnection();
             else {
                 db.reconnect(); // Ensure the connection is active before executing the query
                 CONNECTION = db.sqlConnection();
@@ -58,7 +66,7 @@ public class QueryManager {
             Console.log("Error occurred while executing query.", e).type(QueryonLogTypes.SQL).error().container(QueryonEngine.LOGGER).send();
             throw new QueryonException("Error occurred while executing query.", e);
         } finally {
-            if (TEMPORARY_CONNECTION && CONNECTION != null) {
+            if (temporaryConnection && CONNECTION != null) {
                 try {
                     CONNECTION.close();
                 } catch (SQLException e) {

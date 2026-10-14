@@ -97,48 +97,51 @@ public final class DatabaseBackupManager {
      * @param customBackupFileName The custom name for the backup file. If null, The default name provided when creating the DatabaseBackupManager instance will be used.
      */
     public void createBackup(String customBackupFileName) {
-        final Path DATABASE_FILE = this.DATABASE.dataBaseFile().toPath();
-        if (!Files.exists(DATABASE_FILE)) {
-            Console.log("Skipping database backup because the database file does not exist yet").type(QueryonLogTypes.BACKUP).container(QueryonEngine.LOGGER).send();
-            return;
-        }
-
-        try {
-            /* Check metadata (size) before hashing to save compute time */
-            final long CURRENT_FILE_SIZE = Files.size(DATABASE_FILE);
-            String currentHash = null;
-            boolean shouldSkipBackup = false;
-            if (CURRENT_FILE_SIZE == lastDbSize && lastDbHash != null) {
-                currentHash = hashFile(DATABASE_FILE);
-                if (currentHash.equals(lastDbHash)) shouldSkipBackup = true;
-            }
-
-            if (shouldSkipBackup) {
-                final String TIME = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-                Console.log("Backup skipped at " + TIME + ". The previous is the same.").type(QueryonLogTypes.BACKUP).container(QueryonEngine.LOGGER).send();
+        synchronized (this.DATABASE) {
+            final Path DATABASE_FILE = this.DATABASE.dataBaseFile().toPath();
+            if (!Files.exists(DATABASE_FILE)) {
+                Console.log("Skipping database backup because the database file does not exist yet").type(QueryonLogTypes.BACKUP).container(QueryonEngine.LOGGER).send();
                 return;
             }
 
-            final String backupFileName = (customBackupFileName != null ? customBackupFileName : this.BACKUP_FILE_PREFIX + "-backup") + "-" + LocalDateTime.now().format(BACKUP_TIMESTAMP) + ".db";
-            final Path backupDirectory = this.BACKUP_DIR.toPath();
-            final Path backupFile = backupDirectory.resolve(backupFileName).toAbsolutePath().normalize();
-            if (!Files.isWritable(backupFile.getParent())) throw new IOException("Target backup directory is not writable: " + backupFile.getParent());
+            try {
+                /* Check metadata (size) before hashing to save compute time */
+                final long CURRENT_FILE_SIZE = Files.size(DATABASE_FILE);
+                String currentHash = null;
+                boolean shouldSkipBackup = false;
+                if (CURRENT_FILE_SIZE == lastDbSize && lastDbHash != null) {
+                    currentHash = hashFile(DATABASE_FILE);
+                    if (currentHash.equals(lastDbHash)) shouldSkipBackup = true;
+                }
 
-            Files.createDirectories(backupDirectory);
-            final String SQL = "VACUUM INTO ?";
-            try (var STATEMENT = this.DATABASE.sqlConnection().prepareStatement(SQL)) {
-                STATEMENT.setString(1, backupFile.toString());
-                STATEMENT.executeUpdate();
-            }
+                if (shouldSkipBackup) {
+                    final String TIME = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+                    Console.log("Backup skipped at " + TIME + ". The previous is the same.").type(QueryonLogTypes.BACKUP).container(QueryonEngine.LOGGER).send();
+                    return;
+                }
+
+                final String backupFileName = (customBackupFileName != null ? customBackupFileName : this.BACKUP_FILE_PREFIX + "-backup") + "-" + LocalDateTime.now().format(BACKUP_TIMESTAMP) + ".db";
+                final Path backupDirectory = this.BACKUP_DIR.toPath();
+                final Path backupFile = backupDirectory.resolve(backupFileName).toAbsolutePath().normalize();
+                if (!Files.isWritable(backupFile.getParent())) throw new IOException("Target backup directory is not writable: " + backupFile.getParent());
+
+                Files.createDirectories(backupDirectory);
+                final String SQL = "VACUUM INTO ?";
+                try (var CONNECTION = this.DATABASE.openConnection();
+                     var STATEMENT = CONNECTION.prepareStatement(SQL)) {
+                    STATEMENT.setString(1, backupFile.toString());
+                    STATEMENT.executeUpdate();
+                }
             
-            /* Update tracking variables after a successful backup */
-            lastDbSize = CURRENT_FILE_SIZE;
-            if (currentHash == null) lastDbHash = hashFile(DATABASE_FILE);
-            else lastDbHash = currentHash;
+                /* Update tracking variables after a successful backup */
+                lastDbSize = CURRENT_FILE_SIZE;
+                if (currentHash == null) lastDbHash = hashFile(DATABASE_FILE);
+                else lastDbHash = currentHash;
 
-            Console.log("Database backup created at " + backupFile).type(QueryonLogTypes.BACKUP).container(QueryonEngine.LOGGER).send();
-        } catch (IOException | SQLException e) {
-            Console.log("Failed to create database backup: " + e.getMessage()).error().type(QueryonLogTypes.BACKUP).container(QueryonEngine.LOGGER).send();
+                Console.log("Database backup created at " + backupFile).type(QueryonLogTypes.BACKUP).container(QueryonEngine.LOGGER).send();
+            } catch (IOException | SQLException e) {
+                Console.log("Failed to create database backup: " + e.getMessage()).error().type(QueryonLogTypes.BACKUP).container(QueryonEngine.LOGGER).send();
+            }
         }
     }
 

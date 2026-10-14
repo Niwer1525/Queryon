@@ -18,11 +18,15 @@ import niwer.queryon.tables.Table;
  * Represent a Database on which you can register tables and perform SQL operations.
  * You can connect and disconnect from the database, and it will automatically initialize registered tables when connecting.
  * You can also reconnect to refresh the connection if needed.
+ * Connection lifecycle and schema changes are serialized per instance. In PER_QUERY mode,
+ * each query uses its own configured SQLite connection so independent queries can run concurrently.
+ * Query builders should still not be shared between threads while they are being configured.
  * 
  * @author Niwer
  */
 public class DataBase {
 
+    private static final int SQLITE_BUSY_TIMEOUT_MILLISECONDS = 5_000;
     private SchemaPrunePolicy prunePolicy = SchemaPrunePolicy.STRICT_SAFE;
 
     public static enum ConnectionMode {
@@ -58,13 +62,13 @@ public class DataBase {
     }
 
     /**
-     * @return The current SQL connection to the database, or null if not connected. Note that this connection may be closed or invalid, so it's recommended to call reconnect() before using it to ensure it's valid.
+     * @return The current SQL connection to the database, or null if not connected. This method is intended for internal integration; callers should use QueryManager or an interaction manager because the returned JDBC connection is not independently synchronized.
      */
-    public Connection sqlConnection() {
+    public synchronized Connection sqlConnection() {
         return sqlConnection;
     }
 
-    public boolean isConnected() {
+    public synchronized boolean isConnected() {
         try {
             return this.sqlConnection != null && !this.sqlConnection.isClosed();
         } catch (SQLException e) {
@@ -72,7 +76,7 @@ public class DataBase {
         }
     }
 
-    public ConnectionMode connectionMode() {
+    public synchronized ConnectionMode connectionMode() {
         return this.connectionMode;
     }
 
@@ -82,14 +86,14 @@ public class DataBase {
      * @param connectionMode The connection mode to set. It must be one of the values defined in the ConnectionMode enum.
      * @return This Database instance for chaining
      */
-    public DataBase setConnectionMode(ConnectionMode connectionMode) {
+    public synchronized DataBase setConnectionMode(ConnectionMode connectionMode) {
         if (connectionMode == null) throw new IllegalArgumentException("Connection mode cannot be null");
         this.connectionMode = connectionMode;
         if (connectionMode == ConnectionMode.PER_QUERY) this.disconnect();
         return this;
     }
 
-    public boolean automaticSchemaSync() {
+    public synchronized boolean automaticSchemaSync() {
         return this.automaticSchemaSync;
     }
 
@@ -101,7 +105,7 @@ public class DataBase {
      * @param automaticSchemaSync true to enable automatic schema synchronization, false to disable it
      * @return This Database instance for chaining
      */
-    public DataBase setAutomaticSchemaSync(boolean automaticSchemaSync) {
+    public synchronized DataBase setAutomaticSchemaSync(boolean automaticSchemaSync) {
         this.automaticSchemaSync = automaticSchemaSync;
         return this;
     }
@@ -112,7 +116,7 @@ public class DataBase {
      * @param policy The schema pruning policy to set. It must be one of the values defined in the SchemaPrunePolicy enum.
      * @return This Database instance for chaining
      */
-    public DataBase setPrunePolicy(SchemaPrunePolicy policy) {
+    public synchronized DataBase setPrunePolicy(SchemaPrunePolicy policy) {
         if (policy == null) throw new IllegalArgumentException("Prune policy cannot be null");
         this.prunePolicy = policy;
         return this;
@@ -124,7 +128,7 @@ public class DataBase {
      * We strongly recommand create a backup before calling this method, as it may drop tables or columns if they are not registered anymore.
      * @see DatabaseBackupManager
      */
-    public void syncSchema() {
+    public synchronized void syncSchema() {
         if (!this.isConnected()) this.connect();
         if (prunePolicy == SchemaPrunePolicy.STRICT_SAFE) return;
         
@@ -158,7 +162,19 @@ public class DataBase {
     }
 
     public Connection openConnection() throws SQLException {
-        return DriverManager.getConnection(this.DATA_BASE_PATH);
+        final Connection connection = DriverManager.getConnection(this.DATA_BASE_PATH);
+        try (var statement = connection.createStatement()) {
+            statement.execute("PRAGMA busy_timeout = " + SQLITE_BUSY_TIMEOUT_MILLISECONDS);
+            statement.execute("PRAGMA journal_mode = WAL");
+        } catch (SQLException e) {
+            try {
+                connection.close();
+            } catch (SQLException closeException) {
+                e.addSuppressed(closeException);
+            }
+            throw e;
+        }
+        return connection;
     }
 
     /**
@@ -166,7 +182,7 @@ public class DataBase {
      * 
      * @return true if reconnection was needed, false otherwise
      */
-    public boolean reconnect() {
+    public synchronized boolean reconnect() {
         if (!this.isConnected()) {
             connect();
             return this.isConnected();
@@ -179,7 +195,7 @@ public class DataBase {
      * 
      * @return this Database instance for chaining
      */
-    public DataBase disconnect() {
+    public synchronized DataBase disconnect() {
         try {
             if (this.sqlConnection != null) this.sqlConnection.close();
         } catch (SQLException e) {
@@ -195,7 +211,7 @@ public class DataBase {
      * 
      * @return this Database instance for chaining
      */
-    public DataBase connect() {
+    public synchronized DataBase connect() {
         try {
             if (this.isConnected()) return this;
             this.sqlConnection = this.openConnection();
@@ -211,7 +227,7 @@ public class DataBase {
      * @param table The table class to register. It must extend the <code>Table</code> class and implement the <code>register()</code> method to define its schema and initialization logic.
      * @return this Database instance for chaining
      */
-    public DataBase registerTable(Class<? extends Table> table) {
+    public synchronized DataBase registerTable(Class<? extends Table> table) {
         /* Ensure the table is not already registered */
         if(REGISTERED_TABLES.stream().anyMatch(t -> t.getClass().equals(table)))
             throw new IllegalArgumentException("Table " + table.getSimpleName() + " is already registered");
@@ -234,7 +250,7 @@ public class DataBase {
      * @param tableClass The class of the table to retrieve
      * @return The registered table instance corresponding to the specified class
      */
-    public Table getTable(Class<? extends Table> tableClass) {
+    public synchronized Table getTable(Class<? extends Table> tableClass) {
         return REGISTERED_TABLES.stream()
             .filter(t -> t.getClass().equals(tableClass))
             .findFirst()
@@ -248,7 +264,7 @@ public class DataBase {
      * @param table The table to check
      * @return true if the table is registered in the database, false otherwise
      */
-    public boolean tabExists(Table table) {
+    public synchronized boolean tabExists(Table table) {
         try {
             return QueryManager.queryHasResult(this, "SELECT 1 FROM sqlite_master WHERE type='table' AND name = ?;", table.name());
         } catch (QueryonException e) {
@@ -263,7 +279,7 @@ public class DataBase {
      * @param tableClass The class of the table to check
      * @return true if the table is registered in the database, false otherwise
      */
-    public boolean tabExists(Class<? extends Table> tableClass) {
+    public synchronized boolean tabExists(Class<? extends Table> tableClass) {
         return this.tabExists(this.getTable(tableClass));
     }
 
@@ -274,7 +290,7 @@ public class DataBase {
      * @param tableClass The class of the table to drop
      * @return The Table instance for chaining
      */
-    protected Table dropTable(Class<? extends Table> tableClass) {
+    protected synchronized Table dropTable(Class<? extends Table> tableClass) {
         final Table table = this.getTable(tableClass);
         Console.log("Unregistering and dropping table " + table.name()).type(QueryonLogTypes.SQL).container(QueryonEngine.LOGGER).send();
         QueryManager.query(this, "DROP TABLE IF EXISTS " + table.escapedName() + ";");
