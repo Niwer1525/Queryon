@@ -3,6 +3,7 @@ package niwer.queryon.tables;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
 import niwer.lumen.Console;
 import niwer.queryon.DataBase;
@@ -25,6 +26,12 @@ import niwer.queryon.tables.api.IColumnField;
  */
 public abstract class Table {
 
+    private static final Pattern DATETIME_DEFAULT_PATTERN = Pattern.compile(
+        "default\\s+'\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?'"
+    );
+    private static final Pattern GENERATED_STRING_DEFAULT_PATTERN = Pattern.compile(
+        "default\\s+'[a-z0-9]{8}'"
+    );
     private final DataBase DATA_BASE;
     private final Set<Column> COLUMNS = new LinkedHashSet<>();
     private final Set<Expression> CHECK_CONSTRAINTS = new LinkedHashSet<>();
@@ -184,8 +191,9 @@ public abstract class Table {
             String expectedCreatePrefix = "CREATE TABLE " + this.name() + " (" + DESIRED_COLUMNS_AND_CONSTRAINTS + ")";
 
             /* If the current schema does not match the Java model (e.g., CHECK constraint changed) */
-            if (currentSchema != null && !QueryonEngine.normalizeSql(currentSchema).equals(QueryonEngine.normalizeSql(expectedCreatePrefix))) {
-                migrateTable(DESIRED_COLUMNS_AND_CONSTRAINTS);
+            if (currentSchema != null && !schemasMatch(currentSchema, expectedCreatePrefix)) {
+                Console.log("Schema mismatch details for %s. Existing: %s. Expected: %s", this.name(), currentSchema, expectedCreatePrefix).type(QueryonLogTypes.SQL).container(QueryonEngine.LOGGER).send();
+                migrateTable(DESIRED_COLUMNS_AND_CONSTRAINTS, expectedCreatePrefix);
                 return;
             }
 
@@ -223,11 +231,26 @@ public abstract class Table {
         return sb.toString();
     }
 
+    private static boolean schemasMatch(String actualSchema, String expectedSchema) {
+        return normalizeSchema(actualSchema).equals(normalizeSchema(expectedSchema));
+    }
+
+    private static String normalizeSchema(String schema) {
+        final String NORMALIZED_SCHEMA = QueryonEngine.normalizeSql(schema)
+            .replace("create table if not exists ", "create table ")
+            .replaceAll("\"([^\"]+)\"", "$1")
+            .replaceAll(";$", "");
+            
+        final String WITHOUT_DATETIME_DEFAULTS = DATETIME_DEFAULT_PATTERN.matcher(NORMALIZED_SCHEMA).replaceAll("default '<datetime>'");
+        final String WITHOUT_GENERATED_STRING_DEFAULTS = GENERATED_STRING_DEFAULT_PATTERN.matcher(WITHOUT_DATETIME_DEFAULTS).replaceAll("default '<generated-string>'");
+        return WITHOUT_GENERATED_STRING_DEFAULTS;
+    }
+
     /**
      * Performs a safe table rebuild to apply constraint changes without data loss.
      * In this method, we're using pure SQL via QueryManager to perform the migration.
      */
-    private void migrateTable(String newColumnsAndConstraints) {
+    private void migrateTable(String newColumnsAndConstraints, String expectedCreateStatement) {
         Console.log("Schema mismatch detected for %s. Migrating table...", this.name()).type(QueryonLogTypes.SQL).container(QueryonEngine.LOGGER).send();
 
         String tempTableName = this.name() + "_migration_backup";
@@ -252,19 +275,20 @@ public abstract class Table {
                 .collect(Collectors.joining(", "));
 
             /* Copy existing rows across */
-            if (!commonCols.isEmpty()) {
-                QueryManager.query(this.DATA_BASE, "INSERT INTO " + this.name() + " (" + commonCols + ") SELECT " + commonCols + " FROM " + tempTableName + ";");
-            }
+            if (!commonCols.isEmpty()) QueryManager.query(this.DATA_BASE, "INSERT INTO " + this.name() + " (" + commonCols + ") SELECT " + commonCols + " FROM " + tempTableName + ";");
 
             /* Drop temporary backup table */
             QueryManager.query(this.DATA_BASE, "DROP TABLE " + tempTableName + ";");
+
+            String migratedSchema = QueryManager.queryString(this.DATA_BASE, "SELECT sql FROM sqlite_master WHERE type='table' AND name=" + this.escapedName() + ";");
+            if (migratedSchema == null || !schemasMatch(migratedSchema, expectedCreateStatement)) 
+                throw new IllegalStateException("The migrated schema does not match the requested schema.");
+
             QueryManager.query(this.DATA_BASE, "COMMIT;");
+            Console.log("Schema migration completed and verified for %s.", this.name()).type(QueryonLogTypes.SQL).container(QueryonEngine.LOGGER).send();
         } catch (QueryonException e) {
             QueryManager.query(this.DATA_BASE, "ROLLBACK;");
-            throw new QueryonException(
-                "Cannot migrate table '" + this.name() + "': existing data is incompatible with the new schema. " + "Update or remove invalid rows before retrying the migration.",
-                e
-            );
+            throw new QueryonException("Cannot migrate table '" + this.name() + "': existing data is incompatible with the new schema. " + "Update or remove invalid rows before retrying the migration.", e);
         } catch (Exception e) {
             QueryManager.query(this.DATA_BASE, "ROLLBACK;");
             throw new RuntimeException("Failed to migrate table " + this.name(), e);

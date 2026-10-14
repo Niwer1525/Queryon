@@ -74,6 +74,94 @@ class TableTest {
             "Schema migration should preserve existing rows");
     }
 
+    @Test void testAutomaticSchemaSyncMigratesConstraintsAndAddsColumns(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
+        final Table INITIAL_TABLE = new Table(DB) {
+            @Override public String name() { return "schema_sync_combined_table"; }
+        };
+        INITIAL_TABLE.addColumn(Table.createColumn(DB, "id", EnumColumnTypes.INT)).execute();
+
+        final Table UPDATED_TABLE = new Table(DB) {
+            @Override public String name() { return "schema_sync_combined_table"; }
+        };
+        UPDATED_TABLE.addColumns(
+            Table.createColumn(DB, "id", EnumColumnTypes.INT),
+            Table.createColumn(DB, "status", EnumColumnTypes.TEXT)
+        ).addCheckConstraint(Expressions.in("status", TestEnum.class)).execute();
+
+        assertEquals(1, QueryManager.queryInt(DB,
+            "SELECT COUNT(*) FROM pragma_table_info('schema_sync_combined_table') WHERE name='status';"));
+        assertTrue(QueryManager.queryString(DB,
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='schema_sync_combined_table';")
+            .contains("CHECK"));
+
+        assertDoesNotThrow(UPDATED_TABLE::execute,
+            "A table matching the model should not be migrated again");
+    }
+
+    @Test void testAutomaticSchemaSyncIgnoresChangingDateTimeDefaults(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
+        final Table INITIAL_TABLE = new Table(DB) {
+            @Override public String name() { return "datetime_default_table"; }
+        };
+        INITIAL_TABLE.addColumn(Table.createColumn(DB, "created_at", EnumColumnTypes.DATE_TIME)
+            .defaultValue(new Date(0))).execute();
+        final String INITIAL_SCHEMA = QueryManager.queryString(DB,
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='datetime_default_table';");
+
+        final Table UPDATED_TABLE = new Table(DB) {
+            @Override public String name() { return "datetime_default_table"; }
+        };
+        UPDATED_TABLE.addColumn(Table.createColumn(DB, "created_at", EnumColumnTypes.DATE_TIME)
+            .defaultValue(new Date())).execute();
+
+        assertEquals(INITIAL_SCHEMA, QueryManager.queryString(DB,
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='datetime_default_table';"),
+            "Changing a generated datetime default should not rebuild the table");
+    }
+
+    @Test void testAutomaticSchemaSyncIgnoresChangingTextDateTimeDefaults(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
+        final Table INITIAL_TABLE = new Table(DB) {
+            @Override public String name() { return "text_datetime_default_table"; }
+        };
+        INITIAL_TABLE.addColumn(Table.createColumn(DB, "created_at", EnumColumnTypes.TEXT)
+            .defaultValue("2026-10-15 00:42:03.686")).execute();
+        final String INITIAL_SCHEMA = QueryManager.queryString(DB,
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='text_datetime_default_table';");
+
+        final Table UPDATED_TABLE = new Table(DB) {
+            @Override public String name() { return "text_datetime_default_table"; }
+        };
+        UPDATED_TABLE.addColumn(Table.createColumn(DB, "created_at", EnumColumnTypes.TEXT)
+            .defaultValue("2026-10-15 00:46:43.390")).execute();
+
+        assertEquals(INITIAL_SCHEMA, QueryManager.queryString(DB,
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='text_datetime_default_table';"),
+            "Changing a generated text datetime default should not rebuild the table");
+    }
+
+    @Test void testAutomaticSchemaSyncIgnoresChangingGeneratedStringDefaults(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
+        final Table INITIAL_TABLE = new Table(DB) {
+            @Override public String name() { return "generated_string_default_table"; }
+        };
+        INITIAL_TABLE.addColumn(Table.createColumn(DB, "code", EnumColumnTypes.TEXT)
+            .defaultValue("36qm4pue")).execute();
+        final String INITIAL_SCHEMA = QueryManager.queryString(DB,
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='generated_string_default_table';");
+
+        final Table UPDATED_TABLE = new Table(DB) {
+            @Override public String name() { return "generated_string_default_table"; }
+        };
+        UPDATED_TABLE.addColumn(Table.createColumn(DB, "code", EnumColumnTypes.TEXT)
+            .defaultValue("360npid6")).execute();
+
+        assertEquals(INITIAL_SCHEMA, QueryManager.queryString(DB,
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='generated_string_default_table';"),
+            "Changing a generated string default should not rebuild the table");
+    }
+
     @Test void testAutomaticSchemaSyncAddsMissingColumn(@TempDir File tempDir) {
         final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         final Table INITIAL_TABLE = new Table(DB) {
