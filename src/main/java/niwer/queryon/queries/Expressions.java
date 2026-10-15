@@ -1,10 +1,10 @@
 package niwer.queryon.queries;
 
-import java.util.Arrays;
-import java.util.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.stream.Collectors;
 
 import niwer.queryon.QueryonEngine;
@@ -12,10 +12,10 @@ import niwer.queryon.QueryonEngine;
 /**
  * Utility class providing factory methods for building {@link Expression} instances.
  * Provides a declarative API for building complex expressions using logical operators (AND, OR)
- * and comparison operators (=, <>, >, <, >=, <=)[cite: 1].
+ * and comparison operators (=, <>, >, <, >=, <=).
  * 
  * For example you can use this class to build an expression like:
- * "(age > 30 AND name = 'Alice') OR (age <= 30 AND name = 'Bob')"[cite: 1]
+ * "(age > 30 AND name = 'Alice') OR (age <= 30 AND name = 'Bob')"
  */
 public final class Expressions {
 
@@ -142,6 +142,7 @@ public final class Expressions {
         else if (value instanceof Date) return new Expression(column + " = '" + formatDate((Date) value) + "'");
         else if (value instanceof LocalDate || value instanceof LocalDateTime) return new Expression(column + " = '" + formatDateTimeValue(value) + "'");
         else if (value instanceof String) return new Expression(column + " = '" + escape(value.toString()) + "'");
+        else if (value instanceof Enum<?>) return new Expression(column + " = '" + value.toString() + "'");
         return new Expression(column + " = " + value);
     }
 
@@ -151,6 +152,7 @@ public final class Expressions {
         else if (value instanceof Date) return new Expression(column + " <> '" + formatDate((Date) value) + "'");
         else if (value instanceof LocalDate || value instanceof LocalDateTime) return new Expression(column + " <> '" + formatDateTimeValue(value) + "'");
         else if (value instanceof String) return new Expression(column + " <> '" + escape(value.toString()) + "'");
+        else if (value instanceof Enum<?>) return new Expression(column + " <> '" + value.toString() + "'");
         return new Expression(column + " <> " + value);
     }
 
@@ -165,6 +167,7 @@ public final class Expressions {
             if (VALUE instanceof Date) QUERY.append("'").append(formatDate((Date) VALUE)).append("'");
             else if (VALUE instanceof LocalDate || VALUE instanceof LocalDateTime) QUERY.append("'").append(formatDateTimeValue(VALUE)).append("'");
             else if (VALUE instanceof String) QUERY.append("'").append(escape(VALUE.toString())).append("'");
+            else if (VALUE instanceof Enum<?>) QUERY.append("'").append(VALUE.toString()).append("'");
             else if (VALUE == null) QUERY.append("NULL");
             else QUERY.append(VALUE);
             if (i < values.length - 1) QUERY.append(", ");
@@ -190,16 +193,16 @@ public final class Expressions {
     }
 
     /**
-     * Adds a LIKE condition to the expression with the specified pattern[cite: 1].
-     * The pattern can include SQL wildcards such as '%' and '_'[cite: 1].
+     * Adds a LIKE condition to the expression with the specified pattern.
+     * The pattern can include SQL wildcards such as '%' and '_'.
      * Pattern examples :
-     * - "A%" matches any string that starts with 'A'[cite: 1]
-     * - "%A" matches any string that ends with 'A'[cite: 1]
-     * - "%A%" matches any string that contains 'A'[cite: 1]
-     * - "A_B" matches any string that starts with 'A', followed by any single character, and ends with 'B'[cite: 1]
+     * - "A%" matches any string that starts with 'A'
+     * - "%A" matches any string that ends with 'A'
+     * - "%A%" matches any string that contains 'A'
+     * - "A_B" matches any string that starts with 'A', followed by any single character, and ends with 'B'
      * 
-     * @param column The column that the expression is based on[cite: 1]. Cannot be null or empty.
-     * @param pattern The pattern to match, which can include SQL wildcards[cite: 1]. Cannot be null.
+     * @param column The column that the expression is based on. Cannot be null or empty.
+     * @param pattern The pattern to match, which can include SQL wildcards. Cannot be null.
      * @return The expression defined as "COLUMN LIKE 'pattern'". If the pattern is null, an IllegalArgumentException will be thrown.
      */
     public static Expression like(String column, String pattern) {
@@ -210,12 +213,12 @@ public final class Expressions {
     }
 
     /**
-     * Adds a BETWEEN condition to the expression with the specified lower and upper bounds[cite: 1].
+     * Adds a BETWEEN condition to the expression with the specified lower and upper bounds.
      * 
-     * @param column The column that the expression is based on[cite: 1]. Cannot be null or empty.
-     * @param lower The lower bound of the range[cite: 1]. Cannot be null[cite: 1].
-     * @param upper The upper bound of the range[cite: 1]. Cannot be null[cite: 1].
-     * @return The expression defined as "COLUMN BETWEEN lower AND upper". If either the lower or upper bound is null, an IllegalArgumentException will be thrown[cite: 1].
+     * @param column The column that the expression is based on. Cannot be null or empty.
+     * @param lower The lower bound of the range. Cannot be null.
+     * @param upper The upper bound of the range. Cannot be null.
+     * @return The expression defined as "COLUMN BETWEEN lower AND upper". If either the lower or upper bound is null, an IllegalArgumentException will be thrown.
      */
     public static Expression between(String column, Number lower, Number upper) {
         validateColumn(column);

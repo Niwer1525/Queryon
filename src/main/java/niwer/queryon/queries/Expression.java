@@ -3,11 +3,11 @@ package niwer.queryon.queries;
 import java.util.Objects;
 
 /**
- * This class represents a SQL expression that can be used in WHERE clauses, JOIN conditions, and other parts of SQL queries[cite: 1].
+ * This class represents a SQL expression that can be used in WHERE clauses, JOIN conditions, and other parts of SQL queries
  */
 public class Expression {
 
-    private final String sql; // The SQL representation of the expression[cite: 1]
+    private final String sql; // The SQL representation of the expression
 
     Expression(String sql) {
         if (sql == null || sql.trim().isEmpty()) throw new IllegalArgumentException("SQL expression cannot be null or empty");
