@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.sql.Date;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.Test;
 
@@ -22,6 +24,20 @@ class ExpressionTest {
 
         assertThrows(IllegalArgumentException.class, () -> Expressions.isGreaterThan("age", (Number)null));
         assertThrows(IllegalArgumentException.class, () -> Expressions.isGreaterThan("age", (Date)null));
+    }
+
+    @Test void createLocalDateExpressions() {
+        final LocalDate DATE = LocalDate.of(2024, 1, 1);
+        final LocalDateTime DATE_TIME = LocalDateTime.of(2024, 1, 1, 12, 30, 45);
+
+        assertExpressionEquals("created_at > '2024-01-01'", Expressions.isGreaterThan("created_at", DATE));
+        assertExpressionEquals("created_at >= '2024-01-01'", Expressions.isGreaterThanOrEqualTo("created_at", DATE));
+        assertExpressionEquals("created_at < '2024-01-01'", Expressions.isLessThan("created_at", DATE));
+        assertExpressionEquals("created_at <= '2024-01-01'", Expressions.isLessThanOrEqualTo("created_at", DATE));
+        assertExpressionEquals("created_at <= '2024-01-01 12:30:45'", Expressions.isLessThanOrEqualTo("created_at", DATE_TIME));
+
+        assertThrows(IllegalArgumentException.class, () -> Expressions.isLessThan("created_at", (LocalDate)null));
+        assertThrows(IllegalArgumentException.class, () -> Expressions.isLessThan("created_at", (LocalDateTime)null));
     }
 
     @Test void createGreaterThanOrEqualToExpression() {
@@ -53,6 +69,9 @@ class ExpressionTest {
         final Expression EXPRESSION_DATE = Expressions.isLessThanOrEqualTo("created_at", Date.valueOf("2024-01-01"));
         assertExpressionEquals("created_at <= '2024-01-01'", EXPRESSION_DATE);
 
+        final Expression EXPRESSION_DATE_TIME = Expressions.isLessThanOrEqualTo("created_at", new java.util.Date(0));
+        assertExpressionEquals("created_at <= '1970-01-01 00:00:00'", EXPRESSION_DATE_TIME);
+
         assertThrows(IllegalArgumentException.class, () -> Expressions.isLessThanOrEqualTo("age", (Number)null));
         assertThrows(IllegalArgumentException.class, () -> Expressions.isLessThanOrEqualTo("age", (Date)null));
     }
@@ -77,6 +96,15 @@ class ExpressionTest {
 
         final Expression EXPRESSION_OTHER = Expressions.isNotEqualTo("name", 25);
         assertExpressionEquals("name <> 25", EXPRESSION_OTHER);
+    }
+
+    @Test void createLocalDateEqualityExpressions() {
+        assertExpressionEquals("created_at = '2024-01-01'",
+            Expressions.isEqualTo("created_at", LocalDate.of(2024, 1, 1)));
+        assertExpressionEquals("created_at <> '2024-01-01 12:30:00'",
+            Expressions.isNotEqualTo("created_at", LocalDateTime.of(2024, 1, 1, 12, 30)));
+        assertExpressionEquals("created_at IN ('2024-01-01', '2024-01-02')",
+            Expressions.in("created_at", LocalDate.of(2024, 1, 1), LocalDate.of(2024, 1, 2)));
     }
 
     @Test void createExpression() {

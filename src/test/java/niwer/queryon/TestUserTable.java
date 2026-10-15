@@ -1,5 +1,7 @@
 package niwer.queryon;
 
+import java.time.LocalDate;
+
 import niwer.queryon.queries.Expressions;
 import niwer.queryon.tables.EnumColumnTypes;
 import niwer.queryon.tables.Table;
@@ -14,7 +16,8 @@ public class TestUserTable extends Table {
         this.addColumns(
             createColumn(db, "id", EnumColumnTypes.INT).autoIncrement().primaryKey(),
             createColumn(db, "name", 255).notNull(),
-            createColumn(db, "age", EnumColumnTypes.INT)
+            createColumn(db, "age", EnumColumnTypes.INT),
+            createColumn(db, "createdAt", EnumColumnTypes.DATE)
         )
         .addCheckConstraints(
             Expressions.isGreaterThanOrEqualTo("age", 0) // Age must be non-negative
@@ -46,6 +49,9 @@ public class TestUserTable extends Table {
 
         @IColumnField
         private int age;
+
+        @IColumnField
+        private LocalDate createdAt = LocalDate.now();
 
         public TestUser() {} // Default constructor for objectification
 

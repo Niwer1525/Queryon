@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Field;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.Test;
 
@@ -59,6 +61,8 @@ class EnumColumnTypesTest {
 
         assertEquals(EnumColumnTypes.DATE, EnumColumnTypes.fromJava(java.sql.Date.class));
         assertEquals(EnumColumnTypes.DATE_TIME, EnumColumnTypes.fromJava(java.sql.Timestamp.class));
+        assertEquals(EnumColumnTypes.DATE, EnumColumnTypes.fromJava(LocalDate.class));
+        assertEquals(EnumColumnTypes.DATE_TIME, EnumColumnTypes.fromJava(LocalDateTime.class));
     }
 
     @Test void testFromJavaWithUnsupportedType() {

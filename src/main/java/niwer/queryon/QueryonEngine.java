@@ -1,6 +1,9 @@
 package niwer.queryon;
 
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.TimeZone;
@@ -11,6 +14,7 @@ import niwer.lumen.container.Container;
 public class QueryonEngine {
 
     private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
+    private static final DateTimeFormatter SQL_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public static final Container LOGGER = LumenEngine.registerContainer("QUERYON");
 
@@ -55,6 +59,34 @@ public class QueryonEngine {
     }
 
     /**
+     * Convert a LocalDate object to String in yyyy-MM-dd format.
+     * 
+     * @param date The LocalDate object
+     * @return The formatted date string
+     */
+    public static String dateToSQL(LocalDate date) {
+        return date.format(DateTimeFormatter.ISO_LOCAL_DATE);
+    }
+
+    /**
+     * Convert a LocalDateTime object to String in yyyy-MM-dd HH:mm:ss format.
+     * 
+     * @param date The LocalDateTime object
+     * @return The formatted date string
+     */
+    public static String dateTimeToSQL(LocalDateTime date) {
+        return date.format(SQL_DATE_TIME_FORMATTER);
+    }
+
+    /**
+     * @deprecated Use {@link #dateTimeToSQL(LocalDateTime)} instead.
+     */
+    @Deprecated
+    public static String dateToSql(LocalDateTime date) {
+        return dateTimeToSQL(date);
+    }
+
+    /**
      * Convert a Date object to String in yyyy-MM-dd HH:mm:ss format.
      * e.g : 2026-01-25 01:25:30
      * 
@@ -78,6 +110,8 @@ public class QueryonEngine {
         final String[] VALUES = Arrays.stream(values).map(t -> {
             if (t instanceof String) return escapeString ? "'" + t + "'" : (String) t;
             else if (t instanceof Date) return "'" + dateTimeToSQL((Date) t) + "'";
+            else if (t instanceof LocalDate) return "'" + dateToSQL((LocalDate) t) + "'";
+            else if (t instanceof LocalDateTime) return "'" + dateTimeToSQL((LocalDateTime) t) + "'";
             else if (t instanceof Enum) return "'" + ((Enum<?>) t).name() + "'"; // Enums are converted to their name
             else return String.valueOf(t);
         }).toArray(String[]::new);

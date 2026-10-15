@@ -312,11 +312,15 @@ public class UserTable extends Table {
             createColumn(db, "bio", EnumColumnTypes.TEXT), // Create a "bio" column of type TEXT
             createColumn(db, "age", EnumColumnTypes.INT), // Create an "age" column of type INT
             createColumn(db, "money", EnumColumnTypes.INT).defaultValue(250, Expression.of("money").greaterThanOrEqualTo(0)), // Create a "money" column of type INT with a default value of 250 and a CHECK constraint that money must be greater than or equal to 0
-            createColumn(db, "start_date", EnumColumnTypes.DATE_TIME).defaultValue("CURRENT_TIMESTAMP"), // Create a "start_date" column of type DATE_TIME with a default value of "CURRENT_TIMESTAMP"
-            createColumn(db, "end_date", EnumColumnTypes.DATE).defaultValue("0000-00-00"), // Create a "end_date" column of type DATE with a default value of "0000-00-00"
-            createColumn(db, "another_date", EnumColumnTypes.DATE).defaultValue(new java.util.Date()), // Create a "another_date" column of type DATE with a default value of the current date
             createColumn(db, "example", ExampleEnum.class) // Create an "example" column of type ExampleEnum
             createColumn(db, "department_id", ExampleEnum.INT).unique().foreignKey(DepartmentTable.class, "id", EnumForeginKeyAction.CASCADE)
+
+            createColumn(db, "start_date", EnumColumnTypes.DATE_TIME).defaultValue("CURRENT_TIMESTAMP"), // Create a "start_date" column of type DATE_TIME with a default value of "CURRENT_TIMESTAMP"
+            createColumn(db, "start_date_with_time", EnumColumnTypes.DATE_TIME).defaultValue(java.time.LocalDateTime.now()), // Create a "start_date_with_time" column of type DATE_TIME with a default value of the current date and time
+
+            createColumn(db, "end_date", EnumColumnTypes.DATE).defaultValue("0000-00-00"), // Create a "end_date" column of type DATE with a default value of "0000-00-00"
+            createColumn(db, "another_date", EnumColumnTypes.DATE).defaultValue(new java.util.Date()), // Create a "another_date" column of type DATE with a default value of the current date
+            createColumn(db, "another_date", EnumColumnTypes.DATE).defaultValue(java.time.LocalDate.now()), // Create a "another_date" column of type DATE with a default value of the current date 
         )
         .addCheckConstraints( // Define CHECK constraints for the table
             Expression.of("age").greaterThanOrEqualTo(0) // Age must be non-negative

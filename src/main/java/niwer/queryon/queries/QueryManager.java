@@ -5,6 +5,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -254,6 +256,8 @@ public class QueryManager {
                 /* Time/Date types */
                 if (primitiveType == java.sql.Date.class || primitiveType == java.util.Date.class) return result.getDate(1);
                 if (primitiveType == java.sql.Timestamp.class) return result.getTimestamp(1);
+                if (primitiveType == LocalDate.class) return result.getDate(1).toLocalDate();
+                if (primitiveType == LocalDateTime.class) return result.getTimestamp(1).toLocalDateTime();
                 if (primitiveType == java.sql.Time.class) return result.getTime(1);
                 if (primitiveType == byte[].class) return result.getBytes(1);
                 

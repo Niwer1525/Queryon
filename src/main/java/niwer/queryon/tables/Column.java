@@ -1,6 +1,8 @@
 package niwer.queryon.tables;
 
 import java.lang.reflect.Field;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.regex.Pattern;
@@ -117,6 +119,16 @@ public class Column {
     private void handleDateDefault(Object value, Pattern pattern, String typeName, boolean supportsCurrentTimestamp) {
         if (value == null || (value instanceof String s && s.trim().equalsIgnoreCase("NULL"))) {
             this.defaultValue = null; // Represents no DEFAULT clause attached to this column
+            return;
+        }
+
+        if(value instanceof LocalDate localDate) {
+            this.defaultValue = QueryonEngine.dateToSQL(localDate);
+            return;
+        }
+
+        if (value instanceof LocalDateTime localDateTime) {
+            this.defaultValue = QueryonEngine.dateTimeToSQL(localDateTime);
             return;
         }
 

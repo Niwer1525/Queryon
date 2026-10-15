@@ -8,6 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.File;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -143,6 +145,16 @@ class QueryManagerTest {
         """);
         assertNotNull(RESULT);
         assertInstanceOf(Integer.class, RESULT);
+    }
+
+    @Test void testPrimitiveDateFunctions(@TempDir File tempDir) throws QueryonException {
+        final DataBase DB = QueryonEngineTest.setupEmptyDB(tempDir);
+
+        final LocalDate DATE = QueryManager.queryPrimitive(DB, LocalDate.class, "SELECT '2024-01-01 00:00:00'");
+        assertEquals(LocalDate.of(2024, 1, 1), DATE);
+
+        final LocalDateTime DATE_TIME = QueryManager.queryPrimitive(DB, LocalDateTime.class, "SELECT DATETIME('2024-01-01 12:30:45')");
+        assertEquals(LocalDateTime.of(2024, 1, 1, 12, 30, 45), DATE_TIME);
     }
 
     @Test void testQueryPrimitiveWithNoResult(@TempDir File tempDir) throws QueryonException {

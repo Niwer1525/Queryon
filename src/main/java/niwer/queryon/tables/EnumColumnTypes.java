@@ -18,8 +18,8 @@ public enum EnumColumnTypes {
     BIGINT("BIGINT", Long.class, long.class),
     REAL("REAL", Double.class, double.class, Float.class, float.class),
     BOOLEAN("BOOLEAN", Boolean.class, boolean.class),
-    DATE("DATE", java.sql.Date.class),
-    DATE_TIME("DATETIME", java.sql.Timestamp.class, java.util.Date.class);
+    DATE("DATE", java.sql.Date.class, java.time.LocalDate.class),
+    DATE_TIME("DATETIME", java.sql.Timestamp.class, java.util.Date.class, java.time.LocalDateTime.class);
 
     private final String sqlType;
     private final Class<?>[] javaTypes;

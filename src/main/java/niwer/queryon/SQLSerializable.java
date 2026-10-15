@@ -4,6 +4,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -34,6 +36,8 @@ public abstract class SQLSerializable<T> {
                 else if (FIELD.getType() == double.class || FIELD.getType() == Double.class) FIELD.set(this, resultSet.getDouble(COLUMN_NAME));
                 else if (FIELD.getType() == float.class || FIELD.getType() == Float.class) FIELD.set(this, resultSet.getFloat(COLUMN_NAME));
                 else if (FIELD.getType() == Date.class) FIELD.set(this, resultSet.getDate(COLUMN_NAME));
+                else if (FIELD.getType() == LocalDate.class) FIELD.set(this, localDateFrom(resultSet, COLUMN_NAME));
+                else if (FIELD.getType() == LocalDateTime.class) FIELD.set(this, localDateTimeFrom(resultSet, COLUMN_NAME));
                 else if (FIELD.getType().isEnum()) FIELD.set(this, enumFromString(FIELD.getType(), resultSet.getString(COLUMN_NAME)));
                 else throw new UnsupportedOperationException("Unsupported field type " + FIELD.getType().getName() + " for field " + FIELD.getName());
             } catch (final SQLException EX) {
@@ -89,6 +93,16 @@ public abstract class SQLSerializable<T> {
             if (ENUM_CONSTANT.name().equals(name)) return ENUM_CONSTANT;
         }
         throw new IllegalArgumentException("No enum constant " + enumType.getCanonicalName() + "." + name);
+    }
+
+    private static LocalDate localDateFrom(ResultSet resultSet, String columnName) throws SQLException {
+        final java.sql.Date VALUE = resultSet.getDate(columnName);
+        return VALUE == null ? null : VALUE.toLocalDate();
+    }
+
+    private static LocalDateTime localDateTimeFrom(ResultSet resultSet, String columnName) throws SQLException {
+        final java.sql.Timestamp VALUE = resultSet.getTimestamp(columnName);
+        return VALUE == null ? null : VALUE.toLocalDateTime();
     }
 
     /**

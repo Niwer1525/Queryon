@@ -5,12 +5,18 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.sql.ResultSet;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
 import org.junit.jupiter.api.Test;
 
 import niwer.queryon.QueryonEngineTest.TestEnum;
+import niwer.queryon.tables.api.IColumnField;
 
 class SQLSerializableTest {
 
@@ -42,6 +48,33 @@ class SQLSerializableTest {
         // }
 
         // assertThrows(IllegalArgumentException.class, () -> SQLSerializable.defaultDataFromField(null));
+    }
+
+    @Test void testObjectifyLocalDateAndLocalDateTime() throws Exception {
+        final LocalDate EXPECTED_DATE = LocalDate.of(2024, 1, 1);
+        final LocalDateTime EXPECTED_DATE_TIME = LocalDateTime.of(2024, 1, 1, 12, 30, 45);
+        final ResultSet RESULT_SET = (ResultSet) Proxy.newProxyInstance(
+            ResultSet.class.getClassLoader(),
+            new Class<?>[] { ResultSet.class },
+            (proxy, method, args) -> switch (method.getName()) {
+                case "getDate" -> java.sql.Date.valueOf(EXPECTED_DATE);
+                case "getTimestamp" -> Timestamp.valueOf(EXPECTED_DATE_TIME);
+                default -> null;
+            });
+
+        final LocalDateRow ROW = new LocalDateRow();
+        ROW.objectify(RESULT_SET);
+
+        assertEquals(EXPECTED_DATE, ROW.date);
+        assertEquals(EXPECTED_DATE_TIME, ROW.dateTime);
+    }
+
+    private static class LocalDateRow extends SQLSerializable<LocalDateRow> {
+        @IColumnField
+        private LocalDate date;
+
+        @IColumnField
+        private LocalDateTime dateTime;
     }
 
     @Test void testEnumFromString() {

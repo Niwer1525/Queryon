@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.UUID;
 
@@ -60,12 +62,17 @@ public class QueryonEngineTest {
         final Date DATE = new Date(0); // January 1, 1970
         final String SQL_DATE = QueryonEngine.dateToSQL(DATE);
         assertEquals("1970-01-01", SQL_DATE);
+
+        assertEquals("2024-02-29", QueryonEngine.dateToSQL(LocalDate.of(2024, 2, 29)));
     }
 
     @Test void testDateTimeToSQL() {
         final Date DATE = new Date(0); // January 1, 1970
         final String SQL_DATE_TIME = QueryonEngine.dateTimeToSQL(DATE);
         assertEquals("1970-01-01 00:00:00", SQL_DATE_TIME);
+
+        final LocalDateTime DATE_TIME = LocalDateTime.of(2024, 2, 29, 23, 59, 58, 999_999_999);
+        assertEquals("2024-02-29 23:59:58", QueryonEngine.dateTimeToSQL(DATE_TIME));
     }
 
     @Test void testFormatValues() {

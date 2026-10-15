@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.File;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -52,7 +53,7 @@ class InsertionManagerTest {
         final TestUser USER_OBJECT = new TestUser(211255, "Romain", 15);
         final String INSERT_FROM_OBJECT = InsertionManager.insert(DB, TestUserTable.class, USER_OBJECT)
             .buildQuery();
-        assertEquals("INSERT INTO " + ESCAPED_TABLE_NAME + " (id, name, age) VALUES (211255, 'Romain', 15)", INSERT_FROM_OBJECT);
+        assertEquals("INSERT INTO " + ESCAPED_TABLE_NAME + " (id, name, age, createdAt) VALUES (211255, 'Romain', 15, '" + LocalDate.now() + "')", INSERT_FROM_OBJECT);
     }
 
     @Test void testInsertWithSerializable(@TempDir File tempDir) {
@@ -64,7 +65,7 @@ class InsertionManagerTest {
 
         final TestUser USER_OBJECT = new TestUser(211255, "Romain", 15);
         final String INSERT_OR_IGNORE_FROM_OBJECT = InsertionManager.insertOrIgnore(DB, TestUserTable.class, USER_OBJECT).buildQuery();
-        assertEquals("INSERT OR IGNORE INTO " + ESCAPED_TABLE_NAME + " (id, name, age) VALUES (211255, 'Romain', 15)", INSERT_OR_IGNORE_FROM_OBJECT);
+        assertEquals("INSERT OR IGNORE INTO " + ESCAPED_TABLE_NAME + " (id, name, age, createdAt) VALUES (211255, 'Romain', 15, '" + LocalDate.now() + "')", INSERT_OR_IGNORE_FROM_OBJECT);
     }
 
     @Test void testOnConflictDoNothing(@TempDir File tempDir) {
