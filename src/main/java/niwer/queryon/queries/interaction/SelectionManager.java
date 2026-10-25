@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 
 import niwer.queryon.DataBase;
-import niwer.queryon.QueryonEngine;
 import niwer.queryon.SQLSerializable;
 import niwer.queryon.queries.Expression;
 import niwer.queryon.queries.QueryManager;
@@ -97,12 +96,17 @@ public class SelectionManager extends QueryExecutor {
 
     @Override
     protected String buildQuery() {
+        this.clearParameters(); // Clear any previously added parameters before building the query
+
         final StringBuilder QUERY = new StringBuilder("SELECT ");
         if (IS_DISTINCT) QUERY.append("DISTINCT ");
-        QUERY.append(QueryonEngine.formatValues(COLUMNS)).append(" FROM ").append(TABLE.escapedName());
+        QUERY.append(String.join(", ", COLUMNS)).append(" FROM ").append(TABLE.escapedName());
 
         /* Add where */
-        if (whereCondition != null) QUERY.append(" WHERE ").append(whereCondition.toString());
+        if (whereCondition != null) {
+            QUERY.append(" WHERE ").append(whereCondition.toString());
+            this.addParameters(this.whereCondition);
+        }
 
         /* Add order by */
         if (!ORDER_BY.isEmpty()) {
@@ -125,7 +129,7 @@ public class SelectionManager extends QueryExecutor {
      * @return A list of maps representing the result of the query, where each map corresponds to a row in the result set
      */
     public final List<Map<String, Object>> executeMap() {
-        return QueryManager.queryMap(this.DATA_BASE, this.buildQuery());
+        return QueryManager.queryMap(this.DATA_BASE, this.buildQuery(), this.parameters());
     }
 
     /**
@@ -136,7 +140,7 @@ public class SelectionManager extends QueryExecutor {
      * @return An instance of the specified serializer class containing the result of the query
      */
     public final <T extends SQLSerializable<T>> T executeSerializable(Class<T> serializer) {
-        return QueryManager.querySerializable(this.DATA_BASE, serializer, this.buildQuery());
+        return QueryManager.querySerializable(this.DATA_BASE, serializer, this.buildQuery(), this.parameters());
     }
 
     /**
@@ -147,7 +151,7 @@ public class SelectionManager extends QueryExecutor {
      * @return A list of instances of the specified serializer class containing the result of the query
      */
     public final <T extends SQLSerializable<T>> List<T> executeList(Class<T> serializer) {
-        return QueryManager.queryList(this.DATA_BASE, serializer, this.buildQuery());
+        return QueryManager.queryList(this.DATA_BASE, serializer, this.buildQuery(), this.parameters());
     }
 
     /**
@@ -158,7 +162,7 @@ public class SelectionManager extends QueryExecutor {
      * @return A primitive value of the specified type containing the result of the query
      */
     public final <T> T executePrimitive(Class<T> type) {
-        return QueryManager.queryPrimitive(this.DATA_BASE, type, this.buildQuery());
+        return QueryManager.queryPrimitive(this.DATA_BASE, type, this.buildQuery(), this.parameters());
     }
 
     /**
@@ -167,7 +171,7 @@ public class SelectionManager extends QueryExecutor {
      * @return True if there is at least one result, false otherwise
      */
     public final boolean executeHasResult() {
-        return QueryManager.queryHasResult(this.DATA_BASE, this.buildQuery());
+        return QueryManager.queryHasResult(this.DATA_BASE, this.buildQuery(), this.parameters());
     }
 
     /**
@@ -176,7 +180,7 @@ public class SelectionManager extends QueryExecutor {
      * @return The count of results returned by the query, or 0 if the query returns no results or if an error occurs
      */
     public final int executeCountResults() {
-        return QueryManager.queryCountResults(this.DATA_BASE, this.buildQuery());
+        return QueryManager.queryCountResults(this.DATA_BASE, this.buildQuery(), this.parameters());
     }
 
     public static enum EnumOrder { ASC, DESC; }

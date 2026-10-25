@@ -27,7 +27,7 @@ class DeletionManagerTest {
         final String DELETE_WHERE = DeletionManager.delete(DB, TestUserTable.class)
             .where(Expressions.like("name", "%A%"))
             .buildQuery();
-        assertEquals("DELETE FROM " + ESCAPED_TABLE_NAME + " WHERE name LIKE '%A%'", DELETE_WHERE);
+        assertEquals("DELETE FROM " + ESCAPED_TABLE_NAME + " WHERE name LIKE ?", DELETE_WHERE);
     }
 
     @Test void testExecute(@TempDir File tempDir) {

@@ -29,32 +29,32 @@ class UpdateManagerTest {
             .set("name", "Alice")
             .set("age", 30)
             .buildQuery();
-        assertEquals("UPDATE " + ESCAPED_TABLE_NAME + " SET name = 'Alice', age = 30", UPDATE);
+        assertEquals("UPDATE " + ESCAPED_TABLE_NAME + " SET name = ?, age = ?", UPDATE);
 
         final String UPDATE_NULL = UpdateManager.update(DB, TestUserTable.class)
             .set("name", "Alice")
             .set("age", null)
             .buildQuery();
-        assertEquals("UPDATE " + ESCAPED_TABLE_NAME + " SET name = 'Alice', age = NULL", UPDATE_NULL);
+        assertEquals("UPDATE " + ESCAPED_TABLE_NAME + " SET name = ?, age = NULL", UPDATE_NULL);
 
         final String UPDATE_WHERE = UpdateManager.update(DB, TestUserTable.class)
             .set("name", "Alice")
             .set("age", 30)
             .where(Expressions.isEqualTo("id", 1))
             .buildQuery();
-        assertEquals("UPDATE " + ESCAPED_TABLE_NAME + " SET name = 'Alice', age = 30 WHERE id = 1", UPDATE_WHERE);
+        assertEquals("UPDATE " + ESCAPED_TABLE_NAME + " SET name = ?, age = ? WHERE id = ?", UPDATE_WHERE);
 
         final String UPDATE_WHERE_AND_SET_EXPRESSION = UpdateManager.update(DB, TestUserTable.class)
             .set("name", "Alice")
             .set("age", QueryonEngine.raw("age + 5 * 2.5"))
             .where(Expressions.isEqualTo("id", 1))
             .buildQuery();
-        assertEquals("UPDATE " + ESCAPED_TABLE_NAME + " SET name = 'Alice', age = age + 5 * 2.5 WHERE id = 1", UPDATE_WHERE_AND_SET_EXPRESSION);
+        assertEquals("UPDATE " + ESCAPED_TABLE_NAME + " SET name = ?, age = age + 5 * 2.5 WHERE id = ?", UPDATE_WHERE_AND_SET_EXPRESSION);
 
         final String UPDATE_ISO_TIMESTAMP_LITERAL = UpdateManager.update(DB, TestUserTable.class)
             .set("name", "2026-03-20T19:59:29")
             .buildQuery();
-        assertEquals("UPDATE " + ESCAPED_TABLE_NAME + " SET name = '2026-03-20T19:59:29'", UPDATE_ISO_TIMESTAMP_LITERAL);
+        assertEquals("UPDATE " + ESCAPED_TABLE_NAME + " SET name = ?", UPDATE_ISO_TIMESTAMP_LITERAL);
 
         final SelectionManager SELECT_DISTINCT = SelectionManager.selectDistinct(DB, TestUserTable.class)
             .where(Expressions.isGreaterThan("age", 25));
@@ -63,7 +63,7 @@ class UpdateManagerTest {
             .set("age", SELECT_DISTINCT)
             .where(Expressions.isEqualTo("id", 1))
             .buildQuery();
-        assertEquals("UPDATE " + ESCAPED_TABLE_NAME + " SET name = 'Alice', age = (SELECT DISTINCT * FROM " + ESCAPED_TABLE_NAME + " WHERE age > 25) WHERE id = 1", UPDATE_SUBQUERY);
+        assertEquals("UPDATE " + ESCAPED_TABLE_NAME + " SET name = ?, age = (SELECT DISTINCT * FROM " + ESCAPED_TABLE_NAME + " WHERE age > ?) WHERE id = ?", UPDATE_SUBQUERY);
     }
 
     @Test void testUpdateManagerSetMissingColumnName(@TempDir File tempDir) {

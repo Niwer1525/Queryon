@@ -1,7 +1,9 @@
 package niwer.queryon;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -10,6 +12,7 @@ import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.lang.reflect.Field;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
@@ -21,7 +24,7 @@ import niwer.queryon.tables.api.IColumnField;
 class SQLSerializableTest {
 
     @SuppressWarnings("unused")
-    private class Example {
+    private static class Example {
         public TestEnum enumField = TestEnum.VALUE1;
         public String stringField = "test";
         public int intField = 42;
@@ -35,19 +38,19 @@ class SQLSerializableTest {
         private String privateField = "private"; // Should be ignored
     }
     @Test void testDefaultDataFromField() {
-        // Example example = new Example();
-        // for(Field field : Example.class.getDeclaredFields()) {
-        //     field.setAccessible(true);
-        //     Object value = null;
-        //     try {
-        //         value = field.get(example);
-        //     } catch (IllegalAccessException e) {
-        //         throw new RuntimeException(e);
-        //     }
-        //     assertEquals(value, SQLSerializable.defaultDataFromField(field), "defaultDataFromField should return the correct default value for field: " + field.getName());
-        // }
+        assertEquals("test", defaultValue("stringField"));
+        assertEquals(42, defaultValue("intField"));
+        assertEquals("static", defaultValue("staticField"));
+        assertThrows(IllegalArgumentException.class, () -> SQLSerializable.defaultDataFromField(null));
+    }
 
-        // assertThrows(IllegalArgumentException.class, () -> SQLSerializable.defaultDataFromField(null));
+    private static Object defaultValue(String name) {
+        try {
+            final Field FIELD = Example.class.getDeclaredField(name);
+            return SQLSerializable.defaultDataFromField(FIELD);
+        } catch (ReflectiveOperationException exception) {
+            throw new AssertionError(exception);
+        }
     }
 
     @Test void testObjectifyLocalDateAndLocalDateTime() throws Exception {
@@ -75,6 +78,54 @@ class SQLSerializableTest {
 
         @IColumnField
         private LocalDateTime dateTime;
+    }
+
+    @Test void testObjectifySupportedFieldTypesAndMetadata() throws Exception {
+        final LocalDate DATE = LocalDate.of(2024, 1, 1);
+        final LocalDateTime DATE_TIME = LocalDateTime.of(2024, 1, 1, 12, 30, 45);
+        final ResultSet RESULT_SET = (ResultSet) Proxy.newProxyInstance(
+            ResultSet.class.getClassLoader(),
+            new Class<?>[] { ResultSet.class },
+            (proxy, method, args) -> switch (method.getName()) {
+                case "getInt" -> 42;
+                case "getString" -> "VALUE1";
+                case "getBoolean" -> true;
+                case "getLong" -> 123L;
+                case "getDouble" -> 3.5;
+                case "getFloat" -> 2.5f;
+                case "getDate" -> java.sql.Date.valueOf(DATE);
+                case "getTimestamp" -> Timestamp.valueOf(DATE_TIME);
+                default -> null;
+            });
+
+        final SupportedTypesRow ROW = new SupportedTypesRow();
+        ROW.objectify(RESULT_SET);
+
+        assertEquals(42, ROW.integer);
+        assertEquals("VALUE1", ROW.enumValue.name());
+        assertTrue(ROW.booleanValue);
+        assertEquals(123L, ROW.longValue);
+        assertEquals(3.5, ROW.doubleValue);
+        assertEquals(2.5f, ROW.floatValue);
+        assertEquals(java.sql.Date.valueOf(DATE), ROW.date);
+        assertEquals(DATE, ROW.localDate);
+        assertEquals(DATE_TIME, ROW.localDateTime);
+        assertArrayEquals(new String[] {"renamed", "enumValue", "booleanValue", "longValue", "doubleValue", "floatValue", "date", "localDate", "localDateTime"},
+            ROW.columnNames());
+        assertEquals(9, ROW.valuesFromObject().length);
+    }
+
+    private static class SupportedTypesRow extends SQLSerializable<SupportedTypesRow> {
+        @IColumnField(name = "renamed")
+        private int integer;
+        @IColumnField private TestEnum enumValue;
+        @IColumnField private boolean booleanValue;
+        @IColumnField private long longValue;
+        @IColumnField private double doubleValue;
+        @IColumnField private float floatValue;
+        @IColumnField private Date date;
+        @IColumnField private LocalDate localDate;
+        @IColumnField private LocalDateTime localDateTime;
     }
 
     @Test void testEnumFromString() {

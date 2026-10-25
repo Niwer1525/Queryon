@@ -219,7 +219,7 @@ public abstract class Table {
             .orElse("");
 
         final String CHECK_CONSTRAINTS_SQL = CHECK_CONSTRAINTS.stream()
-            .map(Expression::toString)
+            .map(Table::expressionSql)
             .reduce((a, b) -> a + ", " + b)
             .orElse("");
 
@@ -229,6 +229,13 @@ public abstract class Table {
         sb.append(CONSTRAINTS_SQL);
         if (!CHECK_CONSTRAINTS_SQL.isEmpty()) sb.append(", CHECK (").append(CHECK_CONSTRAINTS_SQL).append(")");
         return sb.toString();
+    }
+
+    private static String expressionSql(Expression expression) {
+        String sql = expression.toString();
+        for (Object parameter : expression.parameters())
+            sql = sql.replaceFirst("\\?", java.util.regex.Matcher.quoteReplacement(QueryonEngine.toSqlLiteral(parameter)));
+        return sql;
     }
 
     private static boolean schemasMatch(String actualSchema, String expectedSchema) {

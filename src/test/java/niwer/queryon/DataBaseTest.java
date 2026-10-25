@@ -1,9 +1,11 @@
 package niwer.queryon;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -48,6 +50,20 @@ class DataBaseTest {
 
         assertDoesNotThrow(() -> DB.setAutomaticSchemaSync(true));
         assertTrue(DB.automaticSchemaSync(), "Automatic schema sync should be enabled after setting it to true");
+    }
+
+    @Test void testConnectionConfiguration() {
+        final DataBase DB = new DataBase(new File(tempDir, "configuration.db"));
+
+        assertEquals(DataBase.ConnectionMode.PERSISTENT, DB.connectionMode());
+        assertEquals(5_000, DB.sqliteBusyTimeoutMilliseconds());
+        assertSame(DB, DB.setSqliteBusyTimeoutMilliseconds(0));
+        assertEquals(0, DB.sqliteBusyTimeoutMilliseconds());
+        assertThrows(IllegalArgumentException.class, () -> DB.setSqliteBusyTimeoutMilliseconds(-1));
+
+        assertSame(DB, DB.setConnectionMode(DataBase.ConnectionMode.PER_QUERY));
+        assertEquals(DataBase.ConnectionMode.PER_QUERY, DB.connectionMode());
+        assertSame(DB, DB.setConnectionMode(DataBase.ConnectionMode.PERSISTENT));
     }
 
     @Test void testSyncSchema() {

@@ -3,9 +3,9 @@ package niwer.queryon.queries;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Date;
-import java.util.stream.Collectors;
+import java.util.List;
 
 import niwer.queryon.QueryonEngine;
 
@@ -13,9 +13,6 @@ import niwer.queryon.QueryonEngine;
  * Utility class providing factory methods for building {@link Expression} instances.
  * Provides a declarative API for building complex expressions using logical operators (AND, OR)
  * and comparison operators (=, <>, >, <, >=, <=).
- * 
- * For example you can use this class to build an expression like:
- * "(age > 30 AND name = 'Alice') OR (age <= 30 AND name = 'Bob')"
  */
 public final class Expressions {
 
@@ -37,11 +34,16 @@ public final class Expressions {
         if (expressions == null || expressions.length == 0) throw new IllegalArgumentException("Expressions array cannot be null or empty");
         if (expressions.length == 1) return expressions[0];
 
-        String combined = Arrays.stream(expressions)
-            .map(Expression::toString)
-            .collect(Collectors.joining(" " + operator + " "));
+        List<String> sqlParts = new ArrayList<>();
+        List<Object> combinedParams = new ArrayList<>();
 
-        return new Expression("(" + combined + ")");
+        for (Expression expr : expressions) {
+            sqlParts.add(expr.toString());
+            combinedParams.addAll(expr.parameters()); // Gather parameters from each expression
+        }
+
+        String combinedSql = "(" + String.join(" " + operator + " ", sqlParts) + ")";
+        return new Expression(combinedSql, combinedParams);
     }
 
     // --- Comparison Operators ---
@@ -59,7 +61,7 @@ public final class Expressions {
     public static Expression isGreaterThan(String column, Date date) {
         validateColumn(column);
         if (date == null) throw new IllegalArgumentException("Date cannot be null");
-        return new Expression(column + " > '" + formatDate(date) + "'");
+        return new Expression(column + " > ?", date);
     }
 
     public static Expression isGreaterThan(String column, LocalDate date) {
@@ -73,13 +75,13 @@ public final class Expressions {
     public static Expression isGreaterThan(String column, Number value) {
         validateColumn(column);
         if (value == null) throw new IllegalArgumentException("Value cannot be null");
-        return new Expression(column + " > " + value);
+        return new Expression(column + " > ?", value);
     }
 
     public static Expression isGreaterThanOrEqualTo(String column, Date date) {
         validateColumn(column);
         if (date == null) throw new IllegalArgumentException("Date cannot be null");
-        return new Expression(column + " >= '" + formatDate(date) + "'");
+        return new Expression(column + " >= ?", date);
     }
 
     public static Expression isGreaterThanOrEqualTo(String column, LocalDate date) {
@@ -93,13 +95,13 @@ public final class Expressions {
     public static Expression isGreaterThanOrEqualTo(String column, Number value) {
         validateColumn(column);
         if (value == null) throw new IllegalArgumentException("Value cannot be null");
-        return new Expression(column + " >= " + value);
+        return new Expression(column + " >= ?", value);
     }
 
     public static Expression isLessThan(String column, Date date) {
         validateColumn(column);
         if (date == null) throw new IllegalArgumentException("Date cannot be null");
-        return new Expression(column + " < '" + formatDate(date) + "'");
+        return new Expression(column + " < ?", date);
     }
 
     public static Expression isLessThan(String column, LocalDate date) {
@@ -113,13 +115,13 @@ public final class Expressions {
     public static Expression isLessThan(String column, Number value) {
         validateColumn(column);
         if (value == null) throw new IllegalArgumentException("Value cannot be null");
-        return new Expression(column + " < " + value);
+        return new Expression(column + " < ?", value);
     }
 
     public static Expression isLessThanOrEqualTo(String column, Date date) {
         validateColumn(column);
         if (date == null) throw new IllegalArgumentException("Date cannot be null");
-        return new Expression(column + " <= '" + formatDate(date) + "'");
+        return new Expression(column + " <= ?", date);
     }
 
     public static Expression isLessThanOrEqualTo(String column, LocalDate date) {
@@ -133,27 +135,19 @@ public final class Expressions {
     public static Expression isLessThanOrEqualTo(String column, Number value) {
         validateColumn(column);
         if (value == null) throw new IllegalArgumentException("Value cannot be null");
-        return new Expression(column + " <= " + value);
+        return new Expression(column + " <= ?", value);
     }
 
     public static Expression isEqualTo(String column, Object value) {
         validateColumn(column);
         if (value == null) return new Expression(column + " IS NULL"); 
-        else if (value instanceof Date) return new Expression(column + " = '" + formatDate((Date) value) + "'");
-        else if (value instanceof LocalDate || value instanceof LocalDateTime) return new Expression(column + " = '" + formatDateTimeValue(value) + "'");
-        else if (value instanceof String) return new Expression(column + " = '" + escape(value.toString()) + "'");
-        else if (value instanceof Enum<?>) return new Expression(column + " = '" + value.toString() + "'");
-        return new Expression(column + " = " + value);
+        return new Expression(column + " = ?", QueryonEngine.prepareParam(value));
     }
 
     public static Expression isNotEqualTo(String column, Object value) {
         validateColumn(column);
         if (value == null) return new Expression(column + " IS NOT NULL");
-        else if (value instanceof Date) return new Expression(column + " <> '" + formatDate((Date) value) + "'");
-        else if (value instanceof LocalDate || value instanceof LocalDateTime) return new Expression(column + " <> '" + formatDateTimeValue(value) + "'");
-        else if (value instanceof String) return new Expression(column + " <> '" + escape(value.toString()) + "'");
-        else if (value instanceof Enum<?>) return new Expression(column + " <> '" + value.toString() + "'");
-        return new Expression(column + " <> " + value);
+        return new Expression(column + " <> ?", QueryonEngine.prepareParam(value));
     }
 
     public static Expression in(String column, Object... values) {
@@ -162,18 +156,18 @@ public final class Expressions {
         if (values.length == 0) throw new IllegalArgumentException("Values array cannot be empty");
 
         final StringBuilder QUERY = new StringBuilder(column + " IN (");
+        final List<Object> PARAMS = new ArrayList<>();
+        
         for (int i = 0; i < values.length; i++) {
-            final Object VALUE = values[i];
-            if (VALUE instanceof Date) QUERY.append("'").append(formatDate((Date) VALUE)).append("'");
-            else if (VALUE instanceof LocalDate || VALUE instanceof LocalDateTime) QUERY.append("'").append(formatDateTimeValue(VALUE)).append("'");
-            else if (VALUE instanceof String) QUERY.append("'").append(escape(VALUE.toString())).append("'");
-            else if (VALUE instanceof Enum<?>) QUERY.append("'").append(VALUE.toString()).append("'");
-            else if (VALUE == null) QUERY.append("NULL");
-            else QUERY.append(VALUE);
+            if (values[i] == null) QUERY.append("NULL");
+            else {
+                QUERY.append("?");
+                PARAMS.add(QueryonEngine.prepareParam(values[i]));
+            }
             if (i < values.length - 1) QUERY.append(", ");
         }
         QUERY.append(")");
-        return new Expression(QUERY.toString());
+        return new Expression(QUERY.toString(), PARAMS);
     }
 
     public static Expression in(String column, Class<? extends Enum<?>> enumClass) {
@@ -182,78 +176,52 @@ public final class Expressions {
         if (enumClass.getEnumConstants().length == 0) throw new IllegalArgumentException("Enum class cannot be empty");
 
         final StringBuilder QUERY = new StringBuilder(column + " IN (");
+        final List<Object> PARAMS = new ArrayList<>();
         final Object[] ENUM_CONSTANTS = enumClass.getEnumConstants();
+        
         for (int i = 0; i < ENUM_CONSTANTS.length; i++) {
-            if (ENUM_CONSTANTS[i] instanceof Date) QUERY.append("'").append(formatDate((Date) ENUM_CONSTANTS[i])).append("'");
-            else QUERY.append("'").append(ENUM_CONSTANTS[i]).append("'");
+            QUERY.append("?");
+            PARAMS.add(QueryonEngine.prepareParam(ENUM_CONSTANTS[i]));
             if (i < ENUM_CONSTANTS.length - 1) QUERY.append(", ");
         }
         QUERY.append(")");
-        return new Expression(QUERY.toString());
+        return new Expression(QUERY.toString(), PARAMS);
     }
 
     /**
      * Adds a LIKE condition to the expression with the specified pattern.
-     * The pattern can include SQL wildcards such as '%' and '_'.
-     * Pattern examples :
-     * - "A%" matches any string that starts with 'A'
-     * - "%A" matches any string that ends with 'A'
-     * - "%A%" matches any string that contains 'A'
-     * - "A_B" matches any string that starts with 'A', followed by any single character, and ends with 'B'
-     * 
-     * @param column The column that the expression is based on. Cannot be null or empty.
-     * @param pattern The pattern to match, which can include SQL wildcards. Cannot be null.
-     * @return The expression defined as "COLUMN LIKE 'pattern'". If the pattern is null, an IllegalArgumentException will be thrown.
      */
     public static Expression like(String column, String pattern) {
         validateColumn(column);
         if (pattern == null) throw new IllegalArgumentException("Pattern cannot be null");
-
-        return new Expression(column + " LIKE '" + escape(pattern) + "'");
+        return new Expression(column + " LIKE ?", pattern);
     }
 
     /**
      * Adds a BETWEEN condition to the expression with the specified lower and upper bounds.
-     * 
-     * @param column The column that the expression is based on. Cannot be null or empty.
-     * @param lower The lower bound of the range. Cannot be null.
-     * @param upper The upper bound of the range. Cannot be null.
-     * @return The expression defined as "COLUMN BETWEEN lower AND upper". If either the lower or upper bound is null, an IllegalArgumentException will be thrown.
      */
     public static Expression between(String column, Number lower, Number upper) {
         validateColumn(column);
         if (lower == null || upper == null) throw new IllegalArgumentException("Lower and upper bounds cannot be null");
 
-        return new Expression(column + " BETWEEN " + lower + " AND " + upper);
+        return new Expression(column + " BETWEEN ? AND ?", lower, upper);
     }
+
+    // --- Helper Methods ---
 
     private static void validateColumn(String column) {
         if (column == null || column.isEmpty()) throw new IllegalArgumentException("Column name cannot be null or empty");
     }
 
-    private static String formatDate(Date date) {
-        return date instanceof java.sql.Date sqlDate ? sqlDate.toLocalDate().toString() : QueryonEngine.dateTimeToSQL(date);
-    }
-
     private static Expression dateComparison(String column, String operator, LocalDate date) {
         validateColumn(column);
         if (date == null) throw new IllegalArgumentException("Date cannot be null");
-        return new Expression(column + " " + operator + " '" + date + "'");
+        return new Expression(column + " " + operator + " ?", date.toString());
     }
 
     private static Expression dateComparison(String column, String operator, LocalDateTime dateTime) {
         validateColumn(column);
         if (dateTime == null) throw new IllegalArgumentException("Date-time cannot be null");
-        return new Expression(column + " " + operator + " '" + dateTime.format(SQL_DATE_TIME_FORMATTER) + "'");
-    }
-
-    private static String formatDateTimeValue(Object value) {
-        return value instanceof LocalDateTime dateTime
-            ? dateTime.format(SQL_DATE_TIME_FORMATTER)
-            : value.toString();
-    }
-
-    private static String escape(String text) {
-        return text.replace("'", "''");
+        return new Expression(column + " " + operator + " ?", dateTime.format(SQL_DATE_TIME_FORMATTER));
     }
 }
