@@ -32,10 +32,15 @@ public class DeletionManager extends QueryExecutor {
     
     @Override
     protected String buildQuery() {
+        this.clearParameters(); // Clear any previously added parameters before building the query
+        
         final StringBuilder QUERY = new StringBuilder("DELETE FROM ").append(TABLE.escapedName());
 
         /* Add WHERE condition */
-        if (this.whereCondition != null) QUERY.append(" WHERE ").append(this.whereCondition);
+        if (this.whereCondition != null) {
+            QUERY.append(" WHERE ").append(this.whereCondition.toString());
+            this.addParameters(this.whereCondition);
+        }
 
         return QUERY.toString();
     }
@@ -44,6 +49,6 @@ public class DeletionManager extends QueryExecutor {
      * Executes the deletion query on the database.
      */
     public void execute() {
-        QueryManager.query(this.DATA_BASE, this.buildQuery());
+        QueryManager.query(this.DATA_BASE, this.buildQuery(), this.parameters());
     }
 }

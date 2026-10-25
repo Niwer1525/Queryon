@@ -1,10 +1,10 @@
 package niwer.queryon.queries.interaction;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import niwer.queryon.DataBase;
-import niwer.queryon.QueryonEngine;
 import niwer.queryon.SQLSerializable;
 import niwer.queryon.queries.QueryManager;
 import niwer.queryon.tables.Table;
@@ -133,21 +133,32 @@ public class InsertionManager extends QueryExecutor {
 
     @Override
     protected String buildQuery() {
+        this.clearParameters(); // Clear any previously added parameters before building the query
+
+        if (ROWS.isEmpty()) throw new IllegalStateException("Failed to build insertion query: No rows to insert.");
+
         final StringBuilder QUERY = new StringBuilder("INSERT");
         if (IGNORE_CONFLICTS) QUERY.append(" OR IGNORE");
-        QUERY.append(" INTO ").append(TABLE.escapedName()).append(" (").append(QueryonEngine.formatValues(COLUMNS)).append(") VALUES ");
+        QUERY.append(" INTO ").append(TABLE.escapedName()).append(" (").append(String.join(", ", COLUMNS)).append(") VALUES ");
         
-        /* Add objects */
-        final String VALUES_SQL = ROWS.stream()
-            .map(row -> "(" + QueryonEngine.formatValues(true, row) + ")")
-            .reduce((a, b) -> a + ", " + b)
-            .orElseThrow(() -> new IllegalStateException("Failed to build insertion query: No rows to insert."));
-        QUERY.append(VALUES_SQL);
+        /* Generating the placeholders for each row */
+        String placeholders = "(" + String.join(", ", Collections.nCopies(COLUMNS.length, "?")) + ")";
+        List<String> rowsPlaceholders = new ArrayList<>();
+
+        for (Object[] row : ROWS) {
+            rowsPlaceholders.add(placeholders);
+            this.addParameter(row);
+        }
+        
+        QUERY.append(String.join(", ", rowsPlaceholders));
         
         switch (conflictResolution) {
             case NONE -> { /* No conflict resolution, do nothing */ }
             case DO_NOTHING -> QUERY.append(" ON CONFLICT DO NOTHING");
-            case DO_UPDATE -> QUERY.append(" ON CONFLICT DO UPDATE SET ").append(doUpdateManager.buildQuery().replaceFirst("UPDATE " + TABLE.escapedName() + " SET ", ""));
+            case DO_UPDATE -> {
+                QUERY.append(" ON CONFLICT DO UPDATE SET ").append(doUpdateManager.buildQuery().replaceFirst("UPDATE " + TABLE.escapedName() + " SET ", ""));
+                this.addParameters(doUpdateManager); // We add the parameters from the UpdateManager to the InsertionManager's parameters list
+            }
         }
 
         return QUERY.toString();
@@ -157,7 +168,7 @@ public class InsertionManager extends QueryExecutor {
      * Executes the built insertion query against the database.
      */
     public final void execute() {
-        QueryManager.query(this.DATA_BASE, this.buildQuery());
+        QueryManager.query(this.DATA_BASE, this.buildQuery(), this.parameters());
     }
 
     /**

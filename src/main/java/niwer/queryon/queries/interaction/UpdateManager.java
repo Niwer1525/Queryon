@@ -1,7 +1,7 @@
 package niwer.queryon.queries.interaction;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import niwer.queryon.DataBase;
 import niwer.queryon.QueryonEngine;
@@ -18,7 +18,8 @@ import niwer.queryon.tables.Table;
  */
 public class UpdateManager extends QueryExecutor {
 
-    private final Set<String> SETS = new LinkedHashSet<>();
+    private final List<String> SETS_CLAUSES = new ArrayList<>();
+    private final List<Object> SET_PARAMS = new ArrayList<>();
     private Expression whereCondition = null;
 
     private UpdateManager(DataBase dataBase, Class<? extends Table> tableClas) { super(dataBase, tableClas); }
@@ -59,11 +60,19 @@ public class UpdateManager extends QueryExecutor {
      */
     public final UpdateManager set(String column, Object value) {
         if (column == null || column.isEmpty()) throw new IllegalArgumentException("Column name cannot be null or empty.");
-        if(value == null) {
-            this.SETS.add(column + " = NULL");
+        
+        if (value == null) {
+            this.SETS_CLAUSES.add(column + " = NULL");
             return this;
         }
-        this.SETS.add(column + " = " + QueryonEngine.formatValues(!QueryonEngine.isExpression(value), value));
+        
+        /* If it's an raw expression, we inject it directly without a parameter */
+        if (QueryonEngine.isExpression(value)) this.SETS_CLAUSES.add(column + " = " + value.toString());
+        else {
+            this.SETS_CLAUSES.add(column + " = ?");
+            this.SET_PARAMS.add(value);
+        }
+        
         return this;
     }
 
@@ -79,8 +88,11 @@ public class UpdateManager extends QueryExecutor {
      */
     public final UpdateManager set(String column, SelectionManager select) {
         if (column == null || column.isEmpty()) throw new IllegalArgumentException("Column name cannot be null or empty.");
-        if(select == null) return set(column, (Object) null);
-        this.SETS.add(column + " = (" + select.buildQuery() + ")");
+        if (select == null) return set(column, (Object) null);
+        
+        this.SETS_CLAUSES.add(column + " = (" + select.buildQuery() + ")");
+        for (Object param : select.parameters()) this.SET_PARAMS.add(param);
+        
         return this;
     }
 
@@ -99,11 +111,18 @@ public class UpdateManager extends QueryExecutor {
 
     @Override
     protected String buildQuery() {
-        if (this.SETS.isEmpty()) throw new IllegalStateException("At least one column must be set for an update query.");
-        final StringBuilder QUERY = new StringBuilder("UPDATE " + this.TABLE.escapedName() + " SET " + String.join(", ", this.SETS));
+        this.clearParameters(); // Clear any previously added parameters before building the query
+        
+        if (this.SETS_CLAUSES.isEmpty()) throw new IllegalStateException("At least one column must be set for an update query.");
+        
+        final StringBuilder QUERY = new StringBuilder("UPDATE " + this.TABLE.escapedName() + " SET " + String.join(", ", this.SETS_CLAUSES));
+        this.addParameter(this.SET_PARAMS);
         
         /* Where condition */
-        if (this.whereCondition != null) QUERY.append(" WHERE ").append(this.whereCondition.toString());
+        if (this.whereCondition != null) {
+            QUERY.append(" WHERE ").append(this.whereCondition.toString());
+            this.addParameters(this.whereCondition);
+        }
         
         return QUERY.toString();
     }
@@ -112,6 +131,6 @@ public class UpdateManager extends QueryExecutor {
      * Executes the query.
      */
     public void execute() {
-        QueryManager.query(this.DATA_BASE, this.buildQuery());
+        QueryManager.query(this.DATA_BASE, this.buildQuery(), this.parameters());
     }
 }

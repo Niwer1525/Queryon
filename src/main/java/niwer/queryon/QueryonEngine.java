@@ -4,7 +4,6 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.TimeZone;
 
@@ -99,33 +98,26 @@ public class QueryonEngine {
         return FORMATTER.format(date);
     }
 
-    /**
-     * Formats an array of objects as a comma-separated string.
-     * 
-     * @param escapeString Whether to escape string values with single quotes
-     * @param values The objects to format
-     * @return The formatted string
-     */
-    public static String formatValues(boolean escapeString, Object... values) {
-        final String[] VALUES = Arrays.stream(values).map(t -> {
-            if (t instanceof String) return escapeString ? "'" + t + "'" : (String) t;
-            else if (t instanceof Date) return "'" + dateTimeToSQL((Date) t) + "'";
-            else if (t instanceof LocalDate) return "'" + dateToSQL((LocalDate) t) + "'";
-            else if (t instanceof LocalDateTime) return "'" + dateTimeToSQL((LocalDateTime) t) + "'";
-            else if (t instanceof Enum) return "'" + ((Enum<?>) t).name() + "'"; // Enums are converted to their name
-            else return String.valueOf(t);
-        }).toArray(String[]::new);
-        return formatValues(VALUES);
+    private static String formatDate(Date date) {
+        return date instanceof java.sql.Date sqlDate ? sqlDate.toLocalDate().toString() : QueryonEngine.dateTimeToSQL(date);
+    }
+
+    private static String formatDateTimeValue(Object value) {
+        return value instanceof LocalDateTime dateTime ? dateTime.format(SQL_DATE_TIME_FORMATTER) : value.toString();
     }
 
     /**
-     * Formats an array of strings as a comma-separated string.
+     * Prepares a parameter for a PreparedStatement by applying specific formatting (for Dates, Enums, etc.) before sending it to the JDBC driver.
      * 
-     * @param values The strings to format
-     * @return The formatted string
+     * @param value The value to prepare for the PreparedStatement
+     * @return The prepared value, formatted as needed for the PreparedStatement
      */
-    public static String formatValues(String... values) {
-        return String.join(", ", values);
+    public static Object prepareParam(Object value) {
+        if (value == null) return null;
+        if (value instanceof Date) return formatDate((Date) value);
+        if (value instanceof LocalDate || value instanceof LocalDateTime) return formatDateTimeValue(value);
+        if (value instanceof Enum<?>) return value.toString();
+        return value; // Strings and numbers are returned as-is
     }
 
     /**
