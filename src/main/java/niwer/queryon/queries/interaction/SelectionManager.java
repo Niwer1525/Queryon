@@ -105,7 +105,7 @@ public class SelectionManager extends QueryExecutor {
         /* Add where */
         if (whereCondition != null) {
             QUERY.append(" WHERE ").append(whereCondition.toString());
-            this.addParameter(this.whereCondition);
+            this.addParameters(this.whereCondition);
         }
 
         /* Add order by */

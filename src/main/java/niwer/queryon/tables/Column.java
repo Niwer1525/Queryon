@@ -314,7 +314,7 @@ public class Column {
         if (DEFAULT_VALUE_SQL != null) {
             QUERY.append(" DEFAULT ").append(DEFAULT_VALUE_SQL);
             if (TYPE == EnumColumnTypes.ENUM) QUERY.append(" CHECK (" + ESCAPED_NAME + " IN ('" + String.join("', '", ENUM_VALUES_NAMES) + "'))"); // For ENUM columns, we also add a CHECK constraint to ensure that the value is one of the defined enum values
-            if (defaultValueExpression != null) QUERY.append(" CHECK (" + defaultValueExpression + ")");
+            if (defaultValueExpression != null) QUERY.append(" CHECK (" + expressionSql(defaultValueExpression) + ")");
         }
         return QUERY.toString();
     }
@@ -334,6 +334,13 @@ public class Column {
     protected final String constraintSQL() {
         if (foreignKeyReferenceTable == null || foreignKeyReferenceColumn == null) return null;
         return String.format("FOREIGN KEY (%s) REFERENCES %s(%s)%s", ESCAPED_NAME, foreignKeyReferenceTable.escapedName(), foreignKeyReferenceColumn, " ON DELETE " + foreignKeyDeleteAction);
+    }
+
+    private static String expressionSql(Expression expression) {
+        String sql = expression.toString();
+        for (Object parameter : expression.parameters())
+            sql = sql.replaceFirst("\\?", java.util.regex.Matcher.quoteReplacement(QueryonEngine.toSqlLiteral(parameter)));
+        return sql;
     }
 
     @Override public int hashCode() { return ESCAPED_NAME.hashCode(); }

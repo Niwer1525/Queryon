@@ -120,6 +120,13 @@ public class QueryonEngine {
         return value; // Strings and numbers are returned as-is
     }
 
+    public static String toSqlLiteral(Object value) {
+        Object prepared = prepareParam(value);
+        if (prepared == null) return "NULL";
+        if (prepared instanceof Number || prepared instanceof Boolean) return prepared.toString();
+        return "'" + prepared.toString().replace("'", "''") + "'";
+    }
+
     /**
      * Wraps a raw SQL fragment so it is inserted as-is instead of quoted as a string literal.
      *

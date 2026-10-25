@@ -1,6 +1,7 @@
 package niwer.queryon.queries.interaction;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -147,7 +148,7 @@ public class InsertionManager extends QueryExecutor {
 
         for (Object[] row : ROWS) {
             rowsPlaceholders.add(placeholders);
-            this.addParameter(row);
+            this.addParameters(Arrays.asList(row));
         }
         
         QUERY.append(String.join(", ", rowsPlaceholders));

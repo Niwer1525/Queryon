@@ -116,7 +116,7 @@ public class UpdateManager extends QueryExecutor {
         if (this.SETS_CLAUSES.isEmpty()) throw new IllegalStateException("At least one column must be set for an update query.");
         
         final StringBuilder QUERY = new StringBuilder("UPDATE " + this.TABLE.escapedName() + " SET " + String.join(", ", this.SETS_CLAUSES));
-        this.addParameter(this.SET_PARAMS);
+        this.addParameters(this.SET_PARAMS);
         
         /* Where condition */
         if (this.whereCondition != null) {

@@ -42,7 +42,7 @@ class SelectionManagerTest {
             .where(Expressions.isGreaterThan("age", 25))
             .limit(25)
             .buildQuery();
-        assertEquals("SELECT id, name FROM " + ESCAPED_TABLE_NAME + " WHERE age > 25 LIMIT 25", SELECT_COLUMNS_WHERE);
+        assertEquals("SELECT id, name FROM " + ESCAPED_TABLE_NAME + " WHERE age > ? LIMIT 25", SELECT_COLUMNS_WHERE);
 
         final String SELECT_COLUMNS_ORDER_BY = SelectionManager.select(DB, TestUserTable.class, "id", "name")
             .orderBy("id", EnumOrder.ASC)
@@ -57,7 +57,7 @@ class SelectionManagerTest {
             .orderBy("email", EnumOrder.ASC)
             .orderBy("name", EnumOrder.DESC)
             .buildQuery();
-        assertEquals("SELECT id, name FROM " + ESCAPED_TABLE_NAME + " WHERE age > 25 ORDER BY id ASC, email ASC, name DESC", SELECT_COLUMNS_ORDER_BY_WHERE);
+        assertEquals("SELECT id, name FROM " + ESCAPED_TABLE_NAME + " WHERE age > ? ORDER BY id ASC, email ASC, name DESC", SELECT_COLUMNS_ORDER_BY_WHERE);
     }
 
     @Test void testSelectionInvalidValues(@TempDir File tempDir) {
