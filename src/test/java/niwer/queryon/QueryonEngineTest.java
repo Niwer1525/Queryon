@@ -80,6 +80,7 @@ public class QueryonEngineTest {
 
         assertThrows(IllegalArgumentException.class, () -> QueryonEngine.raw(null));
         assertThrows(IllegalArgumentException.class, () -> QueryonEngine.raw(""));
+        assertThrows(IllegalArgumentException.class, () -> QueryonEngine.raw("  \t"));
     }
 
     @Test void testIsExpression() {
@@ -100,6 +101,28 @@ public class QueryonEngineTest {
     @Test void testEscapeString() {
         final String TABLE_NAME = "users";
         assertEquals("\"users\"", QueryonEngine.escapeString(TABLE_NAME));
+        assertEquals("\"user\"\"s\"", QueryonEngine.escapeString("user\"s"));
+    }
+
+    @Test void testPrepareParam() {
+        assertEquals("1970-01-01", QueryonEngine.prepareParam(new java.sql.Date(0)));
+        assertEquals("1970-01-01 00:00:00", QueryonEngine.prepareParam(new Date(0)));
+        assertEquals("2024-02-29", QueryonEngine.prepareParam(LocalDate.of(2024, 2, 29)));
+        assertEquals("2024-02-29 23:59:58", QueryonEngine.prepareParam(LocalDateTime.of(2024, 2, 29, 23, 59, 58)));
+        assertEquals("VALUE1", QueryonEngine.prepareParam(TestEnum.VALUE1));
+        assertEquals(42, QueryonEngine.prepareParam(42));
+        assertEquals("NULL", QueryonEngine.prepareParam("NULL"));
+        assertEquals(null, QueryonEngine.prepareParam(null));
+    }
+
+    @Test void testSqlLiterals() {
+        assertEquals("NULL", QueryonEngine.toSqlLiteral(null));
+        assertEquals("42", QueryonEngine.toSqlLiteral(42));
+        assertEquals("true", QueryonEngine.toSqlLiteral(true));
+        assertEquals("'Alice'", QueryonEngine.toSqlLiteral("Alice"));
+        assertEquals("'O''Brien'", QueryonEngine.toSqlLiteral("O'Brien"));
+        assertEquals("'2024-02-29'", QueryonEngine.toSqlLiteral(LocalDate.of(2024, 2, 29)));
+        assertEquals("'VALUE1'", QueryonEngine.toSqlLiteral(TestEnum.VALUE1));
     }
 
     @Test void testWrap() {

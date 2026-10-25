@@ -1,7 +1,9 @@
 package niwer.queryon.queries;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Date;
 import java.time.LocalDate;
@@ -33,6 +35,39 @@ class ExpressionTest {
      */
     private static void assertExpressionEquals(String expectedSql, Expression expression) {
         assertExpressionEquals(expectedSql, List.of(), expression);
+    }
+
+    @Test void testEquals() {
+        Expression exp1 = new Expression("age > ?", 30);
+        Expression exp2 = new Expression("age > ?", 30);
+        assertTrue(exp1.equals(exp1), "An expression should be equal to itself");
+        assertTrue(exp1.equals(exp2), "Expressions with the same SQL and parameters should be equal");
+        assertTrue(exp1.hashCode() == exp2.hashCode(), "Hash codes of equal expressions should be the same");
+        assertFalse(exp1.equals(null));
+        assertFalse(exp1.equals("some string"));
+    }
+
+    @Test void testLogicalAndOrAndAdditionalPredicates() {
+        final Expression AGE = Expressions.between("age", 18, 65);
+        final Expression NAME = Expressions.like("name", "A%");
+
+        assertExpressionEquals("(age BETWEEN ? AND ? AND name LIKE ?)",
+            List.of(18, 65, "A%"), Expressions.and(AGE, NAME));
+        assertExpressionEquals("(age BETWEEN ? AND ? OR name LIKE ?)",
+            List.of(18, 65, "A%"), Expressions.or(AGE, NAME));
+        assertEquals(AGE, Expressions.and(AGE));
+        assertEquals(NAME, Expressions.or(NAME));
+    }
+
+    @Test void testInvalidExpressionArguments() {
+        assertThrows(IllegalArgumentException.class, () -> Expressions.isNull(""));
+        assertThrows(IllegalArgumentException.class, () -> Expressions.isNotNull(null));
+        assertThrows(IllegalArgumentException.class, () -> Expressions.like("name", null));
+        assertThrows(IllegalArgumentException.class, () -> Expressions.between("age", null, 10));
+        assertThrows(IllegalArgumentException.class, () -> Expressions.in("status"));
+        assertThrows(IllegalArgumentException.class, () -> Expressions.in("status", (Object[]) null));
+        assertThrows(IllegalArgumentException.class, () -> Expressions.and());
+        assertThrows(IllegalArgumentException.class, () -> Expressions.or((Expression[]) null));
     }
 
     @Test void createGreaterThanExpression() {
