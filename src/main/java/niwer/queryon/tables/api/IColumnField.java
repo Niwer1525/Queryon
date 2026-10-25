@@ -27,6 +27,8 @@ public @interface IColumnField {
 
     boolean unique() default false; // Optional: specify if the column should be UNIQUE
 
+    String uniqueGroup() default ""; // Optional: group columns into a composite UNIQUE constraint
+
     boolean primaryKey() default false; // Optional: specify if the column should be a PRIMARY KEY
 
     EnumForeginKeyAction onDelete() default EnumForeginKeyAction.NO_ACTION; // Optional: specify the action to take on delete for foreign keys (default is NO ACTION)

@@ -52,6 +52,29 @@ class TableTest {
         );
     }
 
+    @Test void testCompositeUniqueConstraint(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
+        final Table TABLE = new Table(DB) {
+            @Override public String name() { return "composite_unique_table"; }
+        };
+        final Column TENANT = Table.createColumn(DB, "tenant", EnumColumnTypes.TEXT);
+        final Column EXTERNAL_ID = Table.createColumn(DB, "external_id", EnumColumnTypes.TEXT);
+
+        TABLE.addColumns(TENANT, EXTERNAL_ID)
+            .addUniqueConstraint(TENANT, EXTERNAL_ID)
+            .execute();
+
+        final String SCHEMA = QueryManager.queryString(DB,
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='composite_unique_table';");
+        assertTrue(SCHEMA.contains("UNIQUE (\"tenant\", \"external_id\")"));
+        QueryManager.query(DB,
+            "INSERT INTO composite_unique_table (tenant, external_id) VALUES ('tenant-a', 'id-1');");
+        assertThrows(QueryonException.class, () -> QueryManager.query(DB,
+            "INSERT INTO composite_unique_table (tenant, external_id) VALUES ('tenant-a', 'id-1');"));
+        assertDoesNotThrow(() -> QueryManager.query(DB,
+            "INSERT INTO composite_unique_table (tenant, external_id) VALUES ('tenant-a', 'id-2');"));
+    }
+
     @Test void testAutomaticSchemaSyncMigratesChangedSchema(@TempDir File tempDir) {
         final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         final Table INITIAL_TABLE = new Table(DB) {
@@ -299,6 +322,19 @@ class TableTest {
         }, "Should not throw an exception when creating a column from a class without ColumnField annotations");
     }
 
+    @Test void testCompositeUniqueConstraintFromAnnotation(@TempDir File tempDir) {
+        final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
+        final Table TABLE = new Table(DB) {
+            @Override public String name() { return "annotated_composite_unique_table"; }
+        };
+
+        TABLE.addColumnsFromClass(TestCompositeUniqueAnnotatedClass.class).execute();
+
+        final String SCHEMA = QueryManager.queryString(DB,
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='annotated_composite_unique_table';");
+        assertTrue(SCHEMA.contains("UNIQUE (\"tenant\", \"externalId\")"));
+    }
+
     @Test void testCreateColumnFromAnnotationIllegal(@TempDir File tempDir) {
         final DataBase DB = QueryonEngineTest.setupUsersDB(tempDir);
         final Table TABLE = new Table(DB) {
@@ -342,6 +378,14 @@ class TableTest {
 
         @IColumnField()
         private Date testDate = new Date();
+    }
+
+    private static class TestCompositeUniqueAnnotatedClass extends SQLSerializable<TestCompositeUniqueAnnotatedClass> {
+        @IColumnField(uniqueGroup = "tenant_external_id")
+        private String tenant;
+
+        @IColumnField(uniqueGroup = "tenant_external_id")
+        private String externalId;
     }
 
     private static class TestAnnotatedClassIllegalOne extends SQLSerializable<TestAnnotatedClassIllegalOne> {

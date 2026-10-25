@@ -339,6 +339,24 @@ public class UserTable extends Table {
 }
 ```
 
+For a composite uniqueness rule, add the columns first and then register them together. This requires the combination to be unique, without requiring either column to be unique by itself:
+```java
+final Column TENANT = createColumn(db, "tenant", EnumColumnTypes.TEXT);
+final Column EXTERNAL_ID = createColumn(db, "external_id", EnumColumnTypes.TEXT);
+
+table.addColumns(TENANT, EXTERNAL_ID)
+     .addUniqueConstraint(TENANT, EXTERNAL_ID);
+```
+
+When columns are created from `@IColumnField`, use the same `uniqueGroup` value on each column that belongs to the composite constraint:
+```java
+@IColumnField(uniqueGroup = "tenant_external_id")
+private String tenant;
+
+@IColumnField(uniqueGroup = "tenant_external_id")
+private String externalId;
+```
+
 But if you have a class that implements SQLSerializable, you can create a table directly from it using the IColumnField annotation to define the columns. Creating a class that implements SQLSerializable and using IColumnField annotations is a more convenient way to create a table plus it allows you to easily convert query results into Java objects and vice versa.
 
 For example:

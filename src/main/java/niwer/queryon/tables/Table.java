@@ -1,7 +1,11 @@
 package niwer.queryon.tables;
 
 import java.util.LinkedHashSet;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 import java.util.regex.Pattern;
 
@@ -34,6 +38,7 @@ public abstract class Table {
     );
     private final DataBase DATA_BASE;
     private final Set<Column> COLUMNS = new LinkedHashSet<>();
+    private final List<List<Column>> UNIQUE_CONSTRAINTS = new ArrayList<>();
     private final Set<Expression> CHECK_CONSTRAINTS = new LinkedHashSet<>();
     
     public Table(DataBase db) {
@@ -142,13 +147,40 @@ public abstract class Table {
      */
     public final Table addColumnsFromClass(Class<? extends SQLSerializable<?>> clazz) {
         if (clazz == null) throw new IllegalArgumentException("Class cannot be null.");
-        
+
+        final Map<String, List<Column>> UNIQUE_GROUPS = new LinkedHashMap<>();
         for (final var FIELD : clazz.getDeclaredFields()) {
             if (FIELD.isAnnotationPresent(IColumnField.class)) {
                 final IColumnField ANNOTATION = FIELD.getAnnotation(IColumnField.class);
-                this.addColumn(new Column(this.DATA_BASE, FIELD, ANNOTATION));
+                final Column COLUMN = new Column(this.DATA_BASE, FIELD, ANNOTATION);
+                this.addColumn(COLUMN);
+                if (!ANNOTATION.uniqueGroup().isBlank())
+                    UNIQUE_GROUPS.computeIfAbsent(ANNOTATION.uniqueGroup(), ignored -> new ArrayList<>()).add(COLUMN);
             }
         }
+        UNIQUE_GROUPS.values().forEach(columns -> addUniqueConstraint(columns.toArray(Column[]::new)));
+        return this;
+    }
+
+    /**
+     * Adds a composite UNIQUE constraint. The combination of values in the supplied
+     * columns must be distinct, while each individual column may contain duplicates.
+     *
+     * @param columns the columns that make up the constraint
+     * @return this table for chaining
+     */
+    public final Table addUniqueConstraint(Column... columns) {
+        if (columns == null || columns.length < 2)
+            throw new IllegalArgumentException("A composite UNIQUE constraint requires at least two columns.");
+        if (java.util.Arrays.stream(columns).anyMatch(column -> column == null))
+            throw new IllegalArgumentException("A UNIQUE constraint cannot contain null columns.");
+
+        final List<Column> CONSTRAINT_COLUMNS = List.of(columns);
+        if (CONSTRAINT_COLUMNS.stream().anyMatch(column -> !COLUMNS.contains(column)))
+            throw new IllegalArgumentException("All UNIQUE constraint columns must be registered with the table.");
+        if (CONSTRAINT_COLUMNS.stream().distinct().count() != CONSTRAINT_COLUMNS.size())
+            throw new IllegalArgumentException("A UNIQUE constraint cannot contain duplicate columns.");
+        if (!UNIQUE_CONSTRAINTS.contains(CONSTRAINT_COLUMNS)) UNIQUE_CONSTRAINTS.add(CONSTRAINT_COLUMNS);
         return this;
     }
 
@@ -218,6 +250,10 @@ public abstract class Table {
             .reduce((a, b) -> a + ", " + b)
             .orElse("");
 
+        final String UNIQUE_CONSTRAINTS_SQL = UNIQUE_CONSTRAINTS.stream()
+            .map(columns -> "UNIQUE (" + columns.stream().map(Column::escapedName).collect(Collectors.joining(", ")) + ")")
+            .collect(Collectors.joining(", "));
+
         final String CHECK_CONSTRAINTS_SQL = CHECK_CONSTRAINTS.stream()
             .map(Table::expressionSql)
             .reduce((a, b) -> a + ", " + b)
@@ -227,6 +263,7 @@ public abstract class Table {
         StringBuilder sb = new StringBuilder(COLUMNS_SQL);
         if (!COLUMNS_SQL.isEmpty() && !CONSTRAINTS_SQL.isEmpty()) sb.append(", ");
         sb.append(CONSTRAINTS_SQL);
+        if (!UNIQUE_CONSTRAINTS_SQL.isEmpty()) sb.append(", ").append(UNIQUE_CONSTRAINTS_SQL);
         if (!CHECK_CONSTRAINTS_SQL.isEmpty()) sb.append(", CHECK (").append(CHECK_CONSTRAINTS_SQL).append(")");
         return sb.toString();
     }
